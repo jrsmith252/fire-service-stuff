@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFRS IC Development - RTC: Car into Building</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #003366 0%, #004d99 100%);
+            color: white;
+            padding: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        
+        .header .scenario-title {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+        
+        /* Progress bar */
+        .progress-container {
+            background: rgba(255,255,255,0.2);
+            height: 4px;
+            margin-top: 15px;
+            border-radius: 2px;
+        }
+        
+        .progress-bar {
+            background: #ffc107;
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        
+        /* Navigation */
+        .nav-tabs {
+            display: flex;
+            background: #002244;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .nav-tab {
+            padding: 12px 16px;
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 0.85rem;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .nav-tab:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+        
+        .nav-tab.active {
+            color: white;
+            border-bottom-color: #ffc107;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        /* Content area */
+        .content {
+            padding: 30px;
+            display: none;
+        }
+        
+        .content.active {
+            display: block;
+        }
+        
+        /* Phase header */
+        .phase-header {
+            background: #003366;
+            color: white;
+            padding: 15px 20px;
+            margin: -30px -30px 25px -30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .phase-header.green {
+            background: #006600;
+        }
+        
+        .phase-header.grey {
+            background: #666;
+        }
+        
+        /* Section styling */
+        h2 {
+            color: #003366;
+            font-size: 1.2rem;
+            margin: 25px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        h3 {
+            color: #333;
+            font-size: 1rem;
+            margin: 20px 0 10px 0;
+        }
+        
+        p {
+            margin-bottom: 12px;
+        }
+        
+        /* Info box - mobilisation style */
+        .info-box {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .info-box .header-line {
+            border-bottom: 1px dashed #999;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .info-row {
+            display: flex;
+            margin: 8px 0;
+        }
+        
+        .info-label {
+            width: 180px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        
+        .info-value {
+            flex: 1;
+        }
+        
+        /* Question box */
+        .question-box {
+            background: #e6f0f8;
+            border-left: 4px solid #003366;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .question-box h4 {
+            color: #003366;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        
+        .question-box ul {
+            margin-left: 20px;
+        }
+        
+        .question-box li {
+            margin: 8px 0;
+        }
+        
+        /* Reveal box */
+        .reveal-box {
+            margin: 20px 0;
+        }
+        
+        .reveal-button {
+            background: #003366;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        
+        .reveal-button:hover {
+            background: #004d99;
+        }
+        
+        .reveal-button .arrow {
+            transition: transform 0.3s;
+        }
+        
+        .reveal-button.open .arrow {
+            transform: rotate(180deg);
+        }
+        
+        .reveal-content {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 0 0 8px 8px;
+            padding: 20px;
+            display: none;
+            margin-top: -4px;
+        }
+        
+        .reveal-content.open {
+            display: block;
+        }
+        
+        .reveal-content ul {
+            margin-left: 20px;
+        }
+        
+        .reveal-content li {
+            margin: 8px 0;
+        }
+        
+        /* Image container */
+        .image-container {
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .image-container img {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .image-caption {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        /* Image gallery */
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .gallery-item {
+            cursor: pointer;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .gallery-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        }
+        
+        .gallery-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+        
+        .gallery-item .label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,51,102,0.9);
+            color: white;
+            padding: 8px;
+            font-size: 0.8rem;
+        }
+        
+        /* Visual cues table */
+        .cues-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+        
+        .cues-table th {
+            background: #003366;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        .cues-table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            vertical-align: top;
+        }
+        
+        .cues-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .cue-category {
+            font-weight: 600;
+            color: #003366;
+            white-space: nowrap;
+        }
+        
+        /* Inject timeline */
+        .inject-timeline {
+            margin: 20px 0;
+        }
+        
+        .inject-item {
+            display: flex;
+            margin: 15px 0;
+            align-items: flex-start;
+        }
+        
+        .inject-time {
+            background: #003366;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            flex-shrink: 0;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .inject-content {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-left: 15px;
+            flex: 1;
+        }
+        
+        /* Progressive injects */
+        .progressive-injects {
+            margin: 20px 0;
+        }
+        
+        .inject-step {
+            margin: 15px 0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .inject-step.locked {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        .inject-step.unlocked {
+            border-color: #003366;
+        }
+        
+        .inject-step.revealed {
+            border-color: #28a745;
+        }
+        
+        .inject-trigger {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+            border: none;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+        
+        .inject-step.locked .inject-trigger {
+            cursor: not-allowed;
+        }
+        
+        .inject-step.unlocked .inject-trigger:hover {
+            background: #e6f0f8;
+        }
+        
+        .inject-step.revealed .inject-trigger {
+            background: #e8f5e9;
+        }
+        
+        .inject-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        
+        .inject-step.locked .inject-icon {
+            background: #ddd;
+            color: #999;
+        }
+        
+        .inject-step.unlocked .inject-icon {
+            background: #003366;
+            color: white;
+        }
+        
+        .inject-step.revealed .inject-icon {
+            background: #28a745;
+            color: white;
+        }
+        
+        .inject-trigger-text {
+            flex: 1;
+        }
+        
+        .inject-trigger-text .action {
+            font-weight: 600;
+            color: #003366;
+        }
+        
+        .inject-step.revealed .inject-trigger-text .action {
+            color: #28a745;
+        }
+        
+        .inject-trigger-text .hint {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .inject-response {
+            display: none;
+            padding: 15px;
+            background: #fff3cd;
+            border-top: 1px solid #ffc107;
+        }
+        
+        .inject-step.revealed .inject-response {
+            display: block;
+        }
+        
+        .inject-response .info {
+            margin-bottom: 10px;
+        }
+        
+        .inject-response .consider {
+            font-style: italic;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #ddd;
+        }
+        
+        .inject-progress {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .progress-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ddd;
+            transition: background 0.3s;
+        }
+        
+        .progress-dot.complete {
+            background: #28a745;
+        }
+        
+        .progress-dot.current {
+            background: #003366;
+        }
+        
+        /* Command Decision Crosshairs */
+        .crosshairs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .crosshairs-quadrant {
+            background: white;
+            border: 2px solid #003366;
+            border-radius: 8px;
+            padding: 15px;
+            min-height: 150px;
+        }
+        
+        .crosshairs-quadrant h4 {
+            color: #003366;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .crosshairs-quadrant.objectives {
+            border-color: #28a745;
+        }
+        
+        .crosshairs-quadrant.objectives h4 {
+            color: #28a745;
+        }
+        
+        .crosshairs-quadrant.priorities {
+            border-color: #007bff;
+        }
+        
+        .crosshairs-quadrant.priorities h4 {
+            color: #007bff;
+        }
+        
+        .crosshairs-quadrant.hazards {
+            border-color: #dc3545;
+        }
+        
+        .crosshairs-quadrant.hazards h4 {
+            color: #dc3545;
+        }
+        
+        .crosshairs-quadrant.people {
+            border-color: #fd7e14;
+        }
+        
+        .crosshairs-quadrant.people h4 {
+            color: #fd7e14;
+        }
+        
+        .crosshairs-quadrant ul {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .crosshairs-quadrant li {
+            margin: 5px 0;
+        }
+        
+        .crosshairs-title {
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: linear-gradient(135deg, #003366 0%, #004d99 100%);
+            color: white;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 600px) {
+            .crosshairs {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Objectives list */
+        .objectives-list {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .objectives-list h4 {
+            color: #2e7d32;
+            margin-bottom: 12px;
+        }
+        
+        .objectives-list ul {
+            margin-left: 20px;
+        }
+        
+        .objectives-list li {
+            margin: 8px 0;
+        }
+        
+        /* Self-assessment */
+        .assessment-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .assessment-item h4 {
+            color: #003366;
+            margin-bottom: 12px;
+        }
+        
+        .rating-scale {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .rating-option {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .rating-option input {
+            display: none;
+        }
+        
+        .rating-option label {
+            display: block;
+            padding: 10px;
+            background: #f5f5f5;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        
+        .rating-option input:checked + label {
+            background: #003366;
+            color: white;
+            border-color: #003366;
+        }
+        
+        .rating-option label:hover {
+            border-color: #003366;
+        }
+        
+        /* Reflection textarea */
+        .reflection-area {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            margin-top: 10px;
+        }
+        
+        .reflection-area:focus {
+            outline: none;
+            border-color: #003366;
+            box-shadow: 0 0 0 3px rgba(0,51,102,0.1);
+        }
+        
+        /* Navigation buttons */
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        
+        .nav-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .nav-btn.prev {
+            background: #f5f5f5;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        
+        .nav-btn.prev:hover {
+            background: #e0e0e0;
+        }
+        
+        .nav-btn.next {
+            background: #003366;
+            color: white;
+        }
+        
+        .nav-btn.next:hover {
+            background: #004d99;
+        }
+        
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* NOG reference link */
+        .nog-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #003366;
+            text-decoration: none;
+            padding: 8px 16px;
+            background: #e6f0f8;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin: 10px 0;
+        }
+        
+        .nog-link:hover {
+            background: #cce0f0;
+        }
+        
+        /* Lightbox for images */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .lightbox.open {
+            display: flex;
+        }
+        
+        .lightbox img {
+            max-width: 100%;
+            max-height: 90vh;
+            border-radius: 8px;
+        }
+        
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+        
+        /* Welcome screen */
+        .welcome-content {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .welcome-content h2 {
+            border: none;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        
+        .welcome-content .scenario-badge {
+            display: inline-block;
+            background: #003366;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+        
+        .learning-objectives {
+            text-align: left;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        
+        .learning-objectives h3 {
+            color: #003366;
+            margin-bottom: 15px;
+        }
+        
+        .learning-objectives ul {
+            margin-left: 20px;
+        }
+        
+        .learning-objectives li {
+            margin: 10px 0;
+        }
+        
+        .start-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.2s;
+        }
+        
+        .start-btn:hover {
+            background: #218838;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+            
+            .phase-header {
+                margin: -20px -20px 20px -20px;
+                font-size: 1rem;
+            }
+            
+            .info-row {
+                flex-direction: column;
+            }
+            
+            .info-label {
+                width: 100%;
+                margin-bottom: 4px;
+            }
+            
+            .image-gallery {
+                grid-template-columns: 1fr;
+            }
+            
+            .rating-scale {
+                flex-wrap: wrap;
+            }
+            
+            .rating-option {
+                flex: 1 1 45%;
+            }
+            
+            .nav-tab {
+                padding: 10px 12px;
+                font-size: 0.8rem;
+            }
+        }
+        
+        /* Six phases box */
+        .phases-box {
+            background: linear-gradient(135deg, #003366 0%, #004d99 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .phases-box h4 {
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+        
+        .phases-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .phase-item {
+            background: rgba(255,255,255,0.15);
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .phase-item .num {
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        /* OTHERS box */
+        .others-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .others-box h4 {
+            color: #856404;
+            margin-bottom: 12px;
+        }
+        
+        .others-item {
+            display: flex;
+            margin: 8px 0;
+        }
+        
+        .others-letter {
+            font-weight: bold;
+            color: #003366;
+            width: 30px;
+            flex-shrink: 0;
+        }
+        
+        /* Print styles */
+        @media print {
+            .header, .nav-tabs, .nav-buttons, .reveal-button {
+                display: none;
+            }
+            
+            .content {
+                display: block !important;
+                page-break-after: always;
+            }
+            
+            .reveal-content {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>NFRS Incident Command Development</h1>
+            <div class="scenario-title">NFRS-IC-RTC-001: Car into Building</div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+        </div>
+        
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <div class="nav-tab active" data-phase="welcome">Welcome</div>
+            <div class="nav-tab" data-phase="phase1">1. Turnout</div>
+            <div class="nav-tab" data-phase="phase2">2. En Route</div>
+            <div class="nav-tab" data-phase="phase3">3. On Arrival</div>
+            <div class="nav-tab" data-phase="phase4">4. Initial Actions</div>
+            <div class="nav-tab" data-phase="handover">5. Handover</div>
+            <div class="nav-tab" data-phase="phase5">6. Closure</div>
+            <div class="nav-tab" data-phase="reflection">Reflection</div>
+        </div>
+        
+        <!-- Welcome -->
+        <div class="content active" id="welcome">
+            <div class="welcome-content">
+                <h2>RTC: Car into Building</h2>
+                <div class="scenario-badge">ICL1 Development Scenario</div>
+                
+                <p style="max-width: 600px; margin: 0 auto 20px auto;">
+                    This scenario places you in command of an RTC where a vehicle has collided with a commercial building. 
+                    You will work through the incident from mobilisation to closure, making decisions and considering your actions at each phase.
+                </p>
+                
+                <div class="learning-objectives">
+                    <h3>🎯 Learning Objectives</h3>
+                    <p>On completion of this scenario, you will have practised:</p>
+                    <ul>
+                        <li>Conducting a structured scene assessment using the <strong>6 phases of RTC</strong></li>
+                        <li>Developing a casualty-centred rescue plan with <strong>A-plan, B-plan and immediate extrication plan</strong> options</li>
+                        <li>Identifying and managing <strong>structural stability hazards</strong> at RTC incidents</li>
+                        <li>Briefing incoming senior officers using the <strong>OTHERS framework</strong></li>
+                    </ul>
+                </div>
+                
+                <a class="nog-link" href="https://nfrslearn.notts-fire.gov.uk/local/coursecatalogue/index.php?categoryid=8" target="_blank">
+                    📖 NFRS Learn: RTC Modules
+                </a>
+                
+                <p style="margin-top: 20px; color: #666; font-size: 0.9rem;">
+                    <strong>Estimated time:</strong> 20-30 minutes
+                </p>
+                
+                <button class="start-btn" onclick="goToPhase('phase1')">Begin Scenario →</button>
+            </div>
+        </div>
+        
+        <!-- Phase 1: Turnout -->
+        <div class="content" id="phase1">
+            <div class="phase-header">PHASE 1: TURNOUT / MOBILISATION</div>
+            
+            <p>You are the Officer in Charge of <strong>T05P1 Ashfield</strong> when you receive the following mobilisation:</p>
+            
+            <div class="info-box">
+                <div class="header-line">
+                    xx/xx/xx 05:00:00 Alert messaging for station: ASHFIELD
+                </div>
+                <div class="info-row">
+                    <span class="info-label">INCIDENT TYPE:</span>
+                    <span class="info-value">RTC P1 - Car into building</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ADDRESS:</span>
+                    <span class="info-value">LEMO CAFE & BAR<br>12 LEAMINGTON DRIVE<br>SUTTON IN ASHFIELD<br>NG17 5AY</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">GRID REF:</span>
+                    <span class="info-value">X: 53.117359 Y: -1.261158</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">YOUR APPLIANCE:</span>
+                    <span class="info-value">T05P1 (F_WRLW)</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ALSO MOBILISED:</span>
+                    <span class="info-value">T05P2 - Ashfield, T16R1, T16P1, TS01</span>
+                </div>
+            </div>
+            
+            <div class="question-box">
+                <h4>💭 Consider the following:</h4>
+                <ul>
+                    <li>What are your initial considerations based on this information?</li>
+                    <li>What does "car into building" tell you about potential hazards?</li>
+                    <li>What significance does the time of call (05:00) have?</li>
+                    <li>What resources are responding and what capabilities do they bring?</li>
+                </ul>
+            </div>
+            
+            <div class="reveal-box">
+                <button class="reveal-button" onclick="toggleReveal(this)">
+                    <span class="arrow">▼</span> Show Expected Considerations
+                </button>
+                <div class="reveal-content">
+                    <h4>Key points an IC should consider:</h4>
+                    <ul>
+                        <li><strong>P1 indicates persons trapped</strong> - lifesaving is the priority</li>
+                        <li><strong>Structural stability concerns</strong> - vehicle has impacted building, potential for collapse</li>
+                        <li><strong>05:00 hours</strong> - darkness, limited visibility, commercial premises likely closed</li>
+                        <li>Consider if there are <strong>flats above commercial premises</strong> - potential occupants</li>
+                        <li><strong>T16R1</strong> bringing heavy rescue capability; <strong>TS01</strong> providing tactical command (may not be in attendance immediately)</li>
+                        <li>Brief crew on expected 6 phases of RTC approach</li>
+                        <li>EMAS will be attending as part of the PDA. Consider <strong>HART</strong></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn prev" onclick="goToPhase('welcome')">← Back</button>
+                <button class="nav-btn next" onclick="goToPhase('phase2')">Continue to En Route →</button>
+            </div>
+        </div>
+        
+        <!-- Phase 2: En Route -->
+        <div class="content" id="phase2">
+            <div class="phase-header">PHASE 2: EN ROUTE</div>
+            
+            <p>You are now responding to the incident. The response time to this location is approximately 4 minutes.</p>
+            
+            <h2>Information Available En Route</h2>
+            
+            <p>The following information may be gathered via MDT, Control updates, or crew knowledge:</p>
+            
+            <div class="info-box" style="font-family: inherit;">
+                <p><strong>📍 MDT/Google Maps:</strong> Corner plot commercial premises, residential properties adjacent and opposite</p>
+                <p><strong>👥 Crew knowledge:</strong> Flats above the shop</p>
+                <p><strong>📻 Control update:</strong> "Police en route. Ambulance ETA 8 minutes."</p>
+            </div>
+            
+            <div class="question-box">
+                <h4>💭 Consider the following:</h4>
+                <ul>
+                    <li>What information would you access on the MDT en route?</li>
+                    <li>What is your developing Incident Action Plan?</li>
+                    <li>How will you use your resources on arrival?</li>
+                    <li>What requests would you make to Control at this stage?</li>
+                </ul>
+            </div>
+            
+            <div class="reveal-box">
+                <button class="reveal-button" onclick="toggleReveal(this)">
+                    <span class="arrow">▼</span> Show Expected Considerations
+                </button>
+                <div class="reveal-content">
+                    <ul>
+                        <li>Access <strong>aerial imagery, street view</strong> to understand building layout</li>
+                        <li>EMAS attending as part of PDA - consider if <strong>HART</strong> required</li>
+                        <li>Brief crew: expect to conduct <strong>structured RTC approach</strong>, identify roles</li>
+                        <li>Consider <strong>positioning of appliance</strong> for lighting and equipment access</li>
+                        <li>Anticipate potential structural issues - consider requesting <strong>structural engineer</strong> early</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="phases-box">
+                <h4>📋 Remember: The 6 Phases of RTC</h4>
+                <div class="phases-list">
+                    <div class="phase-item"><span class="num">1.</span> Scene Assessment</div>
+                    <div class="phase-item"><span class="num">2.</span> Scene Safety</div>
+                    <div class="phase-item"><span class="num">3.</span> Glass Management</div>
+                    <div class="phase-item"><span class="num">4.</span> Space Creation</div>
+                    <div class="phase-item"><span class="num">5.</span> Full Access</div>
+                    <div class="phase-item"><span class="num">6.</span> Immobilisation & Extrication</div>
+                </div>
+            </div>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn prev" onclick="goToPhase('phase1')">← Back</button>
+                <button class="nav-btn next" onclick="goToPhase('phase3')">Continue to On Arrival →</button>
+            </div>
+        </div>
+        
+        <!-- Phase 3: On Arrival -->
+        <div class="content" id="phase3">
+            <div class="phase-header">PHASE 3: ON ARRIVAL - SCENE ASSESSMENT</div>
+            
+            <p>You have arrived on scene. The following images show what you can see:</p>
+            
+            <div class="image-gallery">
+                <div class="gallery-item" onclick="openLightbox('img1')">
+                    <img src="images/img1.jpg" alt="Approach view" id="thumb1">
+                    <div class="label">Initial Approach View</div>
+                </div>
+                <div class="gallery-item" onclick="openLightbox('img2')">
+                    <img src="images/img2.jpg" alt="Front view" id="thumb2">
+                    <div class="label">Front/Side View</div>
+                </div>
+                <div class="gallery-item" onclick="openLightbox('img3')">
+                    <img src="images/img3.jpg" alt="Wide view" id="thumb3">
+                    <div class="label">Wide Scene View</div>
+                </div>
+                <div class="gallery-item" onclick="openLightbox('img4')">
+                    <img src="images/img4.jpg" alt="IC perspective" id="thumb4">
+                    <div class="label">IC Perspective</div>
+                </div>
+            </div>
+            
+            <h2>Visual Cues Analysis</h2>
+            <p>Examine the scene carefully. What visual cues can you identify and what do they tell you?</p>
+            
+            <div class="reveal-box">
+                <button class="reveal-button" onclick="toggleReveal(this)">
+                    <span class="arrow">▼</span> Show Visual Cues Analysis
+                </button>
+                <div class="reveal-content">
+                    <table class="cues-table">
+                        <thead>
+                            <tr>
+                                <th>Cue Category</th>
+                                <th>What Is Present</th>
+                                <th>Considerations</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="cue-category">Vehicle Position</td>
+                                <td>White hatchback (VW Golf type) embedded in building frontage, lights and indicator illuminated (electrics active, engine may still be running)</td>
+                                <td>Consider benefit(s) of isolating vehicle electrics vs risk of crew exposure to potential collapse zone</td>
+                            </tr>
+                            <tr>
+                                <td class="cue-category">Structural Damage</td>
+                                <td>Visible cracking in brickwork above impact point extending to first floor level - structural stability compromised</td>
+                                <td>Consider benefits vs risk of structural shoring. Seek advice from specialist / TacAd. Establish exclusion zone</td>
+                            </tr>
+                            <tr>
+                                <td class="cue-category">Building Type</td>
+                                <td>Victorian/Edwardian brick building, 2-3 storeys, corner plot with large arched window, commercial ground floor with residential above</td>
+                                <td>Older construction may be less resilient to impact damage. Consider occupants in flats above - evacuation or shelter in place?</td>
+                            </tr>
+                            <tr>
+                                <td class="cue-category">Casualties</td>
+                                <td>Person lying on pavement near vehicle (ejected or struck?), driver trapped in vehicle</td>
+                                <td>Priority to save life. Consider deploying crew member(s) to administer immediate first aid. Gather information on casualty condition to pass to Control for EMAS</td>
+                            </tr>
+                            <tr>
+                                <td class="cue-category">Time/Lighting</td>
+                                <td>Night-time, darkness, scene illumination required</td>
+                                <td>Request lighting immediately. Consider positioning of appliance for scene illumination vs safe distance from structure</td>
+                            </tr>
+                            <tr>
+                                <td class="cue-category">Access/Egress</td>
+                                <td>Corner plot with good access from two directions, double red lines, box junction visible</td>
+                                <td>Good access for additional resources. Consider RVP location and approach route for incoming appliances</td>
+                            </tr>
+                            <tr>
+                                <td class="cue-category">Exposures</td>
+                                <td>Adjacent "Clothes Shop" premises, residential properties opposite with lights on</td>
+                                <td>Witnesses may have information. Consider cordon to manage public. Adjacent premises may need evacuation if collapse risk extends</td>
+                            </tr>
+                            <tr>
+                                <td class="cue-category">Hazards</td>
+                                <td>Vehicle fuel system, potential airbag deployment/non-deployment, structural collapse zone</td>
+                                <td>Brief crews on un-deployed airbag hazards. Identify fuel type. Establish and communicate collapse exclusion zone</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="question-box">
+                <h4>💭 Consider the following:</h4>
+                <ul>
+                    <li>What are your immediate actions on arrival?</li>
+                    <li>What are the main hazards and how will you control them?</li>
+                    <li>Where would you position yourself and why?</li>
+                    <li>How will you deploy your resources?</li>
+                    <li>What is your Incident Action Plan?</li>
+                </ul>
+            </div>
+            
+            <div class="reveal-box">
+                <button class="reveal-button" onclick="toggleReveal(this)">
+                    <span class="arrow">▼</span> Show Expected Considerations
+                </button>
+                <div class="reveal-content">
+                    <h4>Apply the 6 Phases of RTC:</h4>
+                    <ol>
+                        <li><strong>Scene Assessment</strong> - inner/outer survey, information gathering</li>
+                        <li><strong>Scene Safety</strong> - cordons, hazard control, safe approach</li>
+                        <li><strong>Glass Management</strong> - consider leaving in place for structural support</li>
+                        <li><strong>Space Creation</strong> - method to access casualty; consider relocation of vehicle using SRU winch, seek specialist advice</li>
+                        <li><strong>Full Access</strong> - create egress route for casualty</li>
+                        <li><strong>Immobilisation and Extrication</strong> - coordinate with ambulance</li>
+                    </ol>
+                    <h4 style="margin-top: 15px;">Key points:</h4>
+                    <ul>
+                        <li>Establish <strong>collapse/exclusion zone</strong> around damaged structure</li>
+                        <li><strong>Triage casualties</strong> - pedestrian on ground may be higher priority than trapped driver</li>
+                        <li>Request <strong>lighting</strong> - critical for night-time scene</li>
+                        <li>Consider if anyone in the <strong>flat above</strong> - door-knock to check</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn prev" onclick="goToPhase('phase2')">← Back</button>
+                <button class="nav-btn next" onclick="goToPhase('phase4')">Continue to Initial Actions →</button>
+            </div>
+        </div>
+        
+        <!-- Phase 4: Initial Actions -->
+        <div class="content" id="phase4">
+            <div class="phase-header">PHASE 4: INITIAL ACTIONS & INCIDENT DEVELOPMENT</div>
+            
+            <p>You have completed your initial assessment and are now managing the incident. Additional information becomes available:</p>
+            
+            <h2>Scenario Injects</h2>
+            <p>Gather information by clicking each item in order. Consider what each piece of information means for your incident management.</p>
+            
+            <div class="inject-progress">
+                <div class="progress-dot current" id="dot1"></div>
+                <div class="progress-dot" id="dot2"></div>
+                <div class="progress-dot" id="dot3"></div>
+                <div class="progress-dot" id="dot4"></div>
+                <div class="progress-dot" id="dot5"></div>
+                <div class="progress-dot" id="dot6"></div>
+            </div>
+            
+            <div class="progressive-injects">
+                <!-- Inject 1: Driver condition -->
+                <div class="inject-step unlocked" id="inject1">
+                    <button class="inject-trigger" onclick="revealInject(1)">
+                        <span class="inject-icon">1</span>
+                        <div class="inject-trigger-text">
+                            <div class="action">Ask crew member: "What's the driver's condition?"</div>
+                            <div class="hint">Click to get the report</div>
+                        </div>
+                    </button>
+                    <div class="inject-response">
+                        <div class="info">Driver is conscious, complaining of <strong>back pain</strong>. Smells strongly of <strong>alcohol</strong>. Appears to be trapped by injuries rather than mechanical entrapment.</div>
+                        <div class="consider">💭 Consider: How does back pain affect your extrication plan? Does the alcohol smell change your approach?</div>
+                    </div>
+                </div>
+                
+                <!-- Inject 2: Passengers -->
+                <div class="inject-step locked" id="inject2">
+                    <button class="inject-trigger" onclick="revealInject(2)">
+                        <span class="inject-icon">2</span>
+                        <div class="inject-trigger-text">
+                            <div class="action">Ask driver: "Is there anyone else in the vehicle?"</div>
+                            <div class="hint">Click to get the response</div>
+                        </div>
+                    </button>
+                    <div class="inject-response">
+                        <div class="info">Driver confirms they were <strong>alone in the vehicle</strong>. No passengers.</div>
+                        <div class="consider">💭 Consider: How does this affect your resource deployment and priorities?</div>
+                    </div>
+                </div>
+                
+                <!-- Inject 3: Vehicle type -->
+                <div class="inject-step locked" id="inject3">
+                    <button class="inject-trigger" onclick="revealInject(3)">
+                        <span class="inject-icon">3</span>
+                        <div class="inject-trigger-text">
+                            <div class="action">Check vehicle type and fuel system</div>
+                            <div class="hint">Click to identify the vehicle</div>
+                        </div>
+                    </button>
+                    <div class="inject-response">
+                        <div class="info">Vehicle is a <strong>VW Golf - standard petrol</strong>, not electric/hybrid.</div>
+                        <div class="consider">💭 Consider: What would you do differently if it was electric? Where would you find EV information?</div>
+                    </div>
+                </div>
+                
+                <!-- Inject 4: Flat above -->
+                <div class="inject-step locked" id="inject4">
+                    <button class="inject-trigger" onclick="revealInject(4)">
+                        <span class="inject-icon">4</span>
+                        <div class="inject-trigger-text">
+                            <div class="action">Door-knock the flat above</div>
+                            <div class="hint">Click to check for occupants</div>
+                        </div>
+                    </button>
+                    <div class="inject-response">
+                        <div class="info">Flat above the cafe is <strong>unoccupied</strong>. No answer at door, neighbours confirm resident is away.</div>
+                        <div class="consider">💭 Consider: What if there was someone in the flat - how would this change your priorities?</div>
+                    </div>
+                </div>
+                
+                <!-- Inject 5: Additional resources arrive -->
+                <div class="inject-step locked" id="inject5">
+                    <button class="inject-trigger" onclick="revealInject(5)">
+                        <span class="inject-icon">5</span>
+                        <div class="inject-trigger-text">
+                            <div class="action">Radio message from Control</div>
+                            <div class="hint">Click to receive update</div>
+                        </div>
+                    </button>
+                    <div class="inject-response">
+                        <div class="info"><strong>T05P2 and T16R1</strong> now on scene. Station Manager arriving in 10 minutes.</div>
+                        <div class="consider">💭 Consider: How will you brief and deploy the additional crews? What tasks will you assign?</div>
+                    </div>
+                </div>
+                
+                <!-- Inject 6: Ambulance arrives -->
+                <div class="inject-step locked" id="inject6">
+                    <button class="inject-trigger" onclick="revealInject(6)">
+                        <span class="inject-icon">6</span>
+                        <div class="inject-trigger-text">
+                            <div class="action">EMAS crew approaches you</div>
+                            <div class="hint">Click to hear their request</div>
+                        </div>
+                    </button>
+                    <div class="inject-response">
+                        <div class="info"><strong>Ambulance on scene.</strong> Paramedic requests update on entrapment type and estimated extrication time.</div>
+                        <div class="consider">💭 Consider: What information do you provide? How do you coordinate the casualty-centred approach?</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="question-box">
+                <h4>💭 Consider the following:</h4>
+                <ul>
+                    <li>What are your objectives for this incident?</li>
+                    <li>What is your <strong>A-plan</strong> for extrication? What is your <strong>B-plan</strong> if that doesn't work? What's your <strong>immediate plan</strong> for a snatch rescue?</li>
+                    <li>How does the driver's reported <strong>back pain</strong> affect your plan?</li>
+                    <li>The driver smells of <strong>alcohol</strong> - does this change anything?</li>
+                    <li>How will you brief the incoming Station Manager?</li>
+                </ul>
+            </div>
+            
+            <div class="crosshairs-title">📋 Command Decision Crosshairs</div>
+            <div class="crosshairs">
+                <div class="crosshairs-quadrant objectives">
+                    <h4>🎯 Objectives</h4>
+                    <ul>
+                        <li>Save saveable life (driver, pedestrian casualty)</li>
+                        <li>Prevent escalation (structural collapse, fire)</li>
+                        <li>Protect the environment (fuel spillage)</li>
+                    </ul>
+                </div>
+                <div class="crosshairs-quadrant priorities">
+                    <h4>⚡ Priorities</h4>
+                    <ul>
+                        <li>Effect rescue of trapped driver</li>
+                        <li>First aid to pedestrian casualty</li>
+                        <li>Establish exclusion zone around collapse risk</li>
+                        <li>Isolate vehicle electrics/fuel</li>
+                        <li>Safety officer to monitor structure</li>
+                    </ul>
+                </div>
+                <div class="crosshairs-quadrant hazards">
+                    <h4>⚠️ Hazards</h4>
+                    <ul>
+                        <li>Structural collapse - cracking visible</li>
+                        <li>Vehicle fuel system</li>
+                        <li>Un-deployed airbags</li>
+                        <li>Live electrics in vehicle</li>
+                        <li>Glass/debris</li>
+                        <li>Working at night - visibility</li>
+                    </ul>
+                </div>
+                <div class="crosshairs-quadrant people">
+                    <h4>👥 People / To Do</h4>
+                    <ul>
+                        <li>1 driver trapped (back pain, spinal precautions)</li>
+                        <li>1 pedestrian casualty on pavement</li>
+                        <li>Flat above confirmed unoccupied</li>
+                        <li>EMAS on scene - coordinate extrication</li>
+                        <li>SM arriving - prepare OTHERS brief</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="reveal-box">
+                <button class="reveal-button" onclick="toggleReveal(this)">
+                    <span class="arrow">▼</span> Show Expected Considerations
+                </button>
+                <div class="reveal-content">
+                    <h4>Tactical priorities:</h4>
+                    <ul>
+                        <li>Establish safe working environment - <strong>exclusion zone around collapse risk</strong></li>
+                        <li>Structured casualty assessment in absence of paramedic</li>
+                        <li><strong>Back pain = spinal precautions</strong>, controlled extrication, coordinate with ambulance</li>
+                        <li>Alcohol smell - note for handover to police, <strong>does not change rescue approach</strong></li>
+                        <li style="margin-top: 15px;"><em>The following are suggestions - your plans may differ based on your assessment:</em></li>
+                        <li><strong>A-plan (example):</strong> Tunnelling - space creation and extrication from rear of vehicle</li>
+                        <li><strong>B-plan (example):</strong> Half-roof removal to create alternative egress</li>
+                        <li><strong>Immediate/snatch rescue (example):</strong> Winch car out from building using SRU, remove driver door for rapid access</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn prev" onclick="goToPhase('phase3')">← Back</button>
+                <button class="nav-btn next" onclick="goToPhase('handover')">Continue to Handover →</button>
+            </div>
+        </div>
+        
+        <!-- Handover Phase -->
+        <div class="content" id="handover">
+            <div class="phase-header">PHASE 5: HANDOVER TO STATION MANAGER</div>
+            
+            <p>The Station Manager has arrived on scene. You need to provide a structured handover briefing.</p>
+            
+            <div class="question-box">
+                <h4>💭 Consider the following:</h4>
+                <ul>
+                    <li>What key information does the SM need to take command effectively?</li>
+                    <li>How will you structure your handover to ensure nothing is missed?</li>
+                </ul>
+            </div>
+            
+            <div class="others-box">
+                <h4>📝 OTHERS Briefing Framework</h4>
+                <p>Structure your handover using OTHERS:</p>
+                <div class="others-item">
+                    <span class="others-letter">O</span>
+                    <span><strong>Objectives</strong> - operational objectives achieved and outstanding</span>
+                </div>
+                <div class="others-item">
+                    <span class="others-letter">T</span>
+                    <span><strong>Tactical Mode</strong> - current tactical mode</span>
+                </div>
+                <div class="others-item">
+                    <span class="others-letter">H</span>
+                    <span><strong>Hazards</strong> - identified hazards and current risk assessment</span>
+                </div>
+                <div class="others-item">
+                    <span class="others-letter">E</span>
+                    <span><strong>Existing deployments</strong> - existing and proposed deployments</span>
+                </div>
+                <div class="others-item">
+                    <span class="others-letter">R</span>
+                    <span><strong>Resources</strong> - resources on site and those requested</span>
+                </div>
+                <div class="others-item">
+                    <span class="others-letter">S</span>
+                    <span><strong>Structure</strong> - structure of communications and messages sent</span>
+                </div>
+            </div>
+            
+            <div class="reveal-box">
+                <button class="reveal-button" onclick="toggleReveal(this)">
+                    <span class="arrow">▼</span> Show Example OTHERS Brief for This Scenario
+                </button>
+                <div class="reveal-content">
+                    <div class="others-item">
+                        <span class="others-letter">O</span>
+                        <span><strong>Objectives:</strong> Save life - driver extrication in progress, pedestrian casualty receiving first aid. Outstanding - complete extrication, scene safety.</span>
+                    </div>
+                    <div class="others-item">
+                        <span class="others-letter">T</span>
+                        <span><strong>Tactical Mode:</strong> Offensive</span>
+                    </div>
+                    <div class="others-item">
+                        <span class="others-letter">H</span>
+                        <span><strong>Hazards:</strong> Structural instability - cracking visible to first floor, exclusion zone established. Vehicle fuel/electrics isolated. Un-deployed airbags.</span>
+                    </div>
+                    <div class="others-item">
+                        <span class="others-letter">E</span>
+                        <span><strong>Existing deployments:</strong> Crew from T05P1 on extrication. T05P2 crew managing pedestrian casualty. SRU crew standing by for winching and shoring. Safety officer monitoring structure.</span>
+                    </div>
+                    <div class="others-item">
+                        <span class="others-letter">R</span>
+                        <span><strong>Resources:</strong> Two pumps and an SRU in attendance.</span>
+                    </div>
+                    <div class="others-item">
+                        <span class="others-letter">S</span>
+                        <span><strong>Structure:</strong> Command support is currently being established.</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn prev" onclick="goToPhase('phase4')">← Back</button>
+                <button class="nav-btn next" onclick="goToPhase('phase5')">Continue to Closure →</button>
+            </div>
+        </div>
+        
+        <!-- Phase 5: Closure -->
+        <div class="content" id="phase5">
+            <div class="phase-header">PHASE 6: INCIDENT CLOSURE</div>
+            
+            <p>The casualty has been successfully extricated and handed over to the ambulance service. You now need to consider incident closure.</p>
+            
+            <div class="question-box">
+                <h4>💭 Consider the following:</h4>
+                <ul>
+                    <li>What handover arrangements are required now the casualty is extricated?</li>
+                    <li>What agencies need to be involved post-rescue?</li>
+                    <li>What scene preservation considerations are there?</li>
+                    <li>What welfare considerations are there for your crews?</li>
+                </ul>
+            </div>
+            
+            <div class="reveal-box">
+                <button class="reveal-button" onclick="toggleReveal(this)">
+                    <span class="arrow">▼</span> Show Expected Considerations
+                </button>
+                <div class="reveal-content">
+                    <ul>
+                        <li>Structured handover to ambulance - <strong>SAMPLE</strong> or similar</li>
+                        <li><strong>Police scene</strong> - suspected drink driving, potential for criminal investigation</li>
+                        <li><strong>Building control/structural engineer</strong> - dangerous structure, may need to be made safe before handover</li>
+                        <li><strong>Scene preservation</strong> - do not move vehicle until police confirm</li>
+                        <li><strong>Utilities</strong> - check gas/electric supply to premises, isolate if required</li>
+                        <li>Premises owner/keyholder notification via police</li>
+                        <li><strong>Crew welfare</strong> - hot debrief, any exposure to distressing scenes</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn prev" onclick="goToPhase('handover')">← Back</button>
+                <button class="nav-btn next" onclick="goToPhase('reflection')">Continue to Reflection →</button>
+            </div>
+        </div>
+        
+        <!-- Reflection -->
+        <div class="content" id="reflection">
+            <div class="phase-header green">REFLECTION & SELF-ASSESSMENT</div>
+            
+            <p>Take a few minutes to reflect on your decision-making throughout this scenario. Be honest in your self-assessment - this is for your development.</p>
+            
+            <h2>Reflection Questions</h2>
+            
+            <div class="assessment-item">
+                <h4>1. What went well in your decision-making?</h4>
+                <textarea class="reflection-area" placeholder="Write your reflection here..."></textarea>
+            </div>
+            
+            <div class="assessment-item">
+                <h4>2. What would you do differently next time?</h4>
+                <textarea class="reflection-area" placeholder="Write your reflection here..."></textarea>
+            </div>
+            
+            <div class="assessment-item">
+                <h4>3. What knowledge gaps did you identify?</h4>
+                <textarea class="reflection-area" placeholder="Write your reflection here..."></textarea>
+            </div>
+            
+            <div class="assessment-item">
+                <h4>4. What follow-up learning or practice would help you?</h4>
+                <textarea class="reflection-area" placeholder="Write your reflection here..."></textarea>
+            </div>
+            
+            <h2>Self-Assessment: Decision Control Process</h2>
+            <p>Rate your confidence in applying each element during this scenario:</p>
+            
+            <div class="assessment-item">
+                <h4>Gathering information</h4>
+                <div class="rating-scale">
+                    <div class="rating-option">
+                        <input type="radio" name="rating1" id="r1a" value="1">
+                        <label for="r1a">1<br>Need work</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating1" id="r1b" value="2">
+                        <label for="r1b">2<br>Developing</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating1" id="r1c" value="3">
+                        <label for="r1c">3<br>Competent</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating1" id="r1d" value="4">
+                        <label for="r1d">4<br>Confident</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="assessment-item">
+                <h4>Assessing risk</h4>
+                <div class="rating-scale">
+                    <div class="rating-option">
+                        <input type="radio" name="rating2" id="r2a" value="1">
+                        <label for="r2a">1<br>Need work</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating2" id="r2b" value="2">
+                        <label for="r2b">2<br>Developing</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating2" id="r2c" value="3">
+                        <label for="r2c">3<br>Competent</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating2" id="r2d" value="4">
+                        <label for="r2d">4<br>Confident</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="assessment-item">
+                <h4>Setting objectives</h4>
+                <div class="rating-scale">
+                    <div class="rating-option">
+                        <input type="radio" name="rating3" id="r3a" value="1">
+                        <label for="r3a">1<br>Need work</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating3" id="r3b" value="2">
+                        <label for="r3b">2<br>Developing</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating3" id="r3c" value="3">
+                        <label for="r3c">3<br>Competent</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating3" id="r3d" value="4">
+                        <label for="r3d">4<br>Confident</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="assessment-item">
+                <h4>Developing a plan</h4>
+                <div class="rating-scale">
+                    <div class="rating-option">
+                        <input type="radio" name="rating4" id="r4a" value="1">
+                        <label for="r4a">1<br>Need work</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating4" id="r4b" value="2">
+                        <label for="r4b">2<br>Developing</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating4" id="r4c" value="3">
+                        <label for="r4c">3<br>Competent</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating4" id="r4d" value="4">
+                        <label for="r4d">4<br>Confident</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="assessment-item">
+                <h4>Communicating decisions</h4>
+                <div class="rating-scale">
+                    <div class="rating-option">
+                        <input type="radio" name="rating5" id="r5a" value="1">
+                        <label for="r5a">1<br>Need work</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating5" id="r5b" value="2">
+                        <label for="r5b">2<br>Developing</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating5" id="r5c" value="3">
+                        <label for="r5c">3<br>Competent</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating5" id="r5d" value="4">
+                        <label for="r5d">4<br>Confident</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="assessment-item">
+                <h4>Reviewing outcomes</h4>
+                <div class="rating-scale">
+                    <div class="rating-option">
+                        <input type="radio" name="rating6" id="r6a" value="1">
+                        <label for="r6a">1<br>Need work</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating6" id="r6b" value="2">
+                        <label for="r6b">2<br>Developing</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating6" id="r6c" value="3">
+                        <label for="r6c">3<br>Competent</label>
+                    </div>
+                    <div class="rating-option">
+                        <input type="radio" name="rating6" id="r6d" value="4">
+                        <label for="r6d">4<br>Confident</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: #e8f5e9; padding: 25px; border-radius: 8px; margin-top: 30px; text-align: center;">
+                <h3 style="color: #2e7d32; margin-bottom: 15px;">✓ Scenario Complete</h3>
+                <p>Thank you for completing this incident command development scenario.</p>
+                <p style="margin-top: 15px; color: #666; font-size: 0.9rem;">
+                    Consider discussing your reflections with a colleague or supervisor, and identify any follow-up learning from the NOG or NFRS procedures.
+                </p>
+                <a class="nog-link" href="https://nfrslearn.notts-fire.gov.uk/local/coursecatalogue/index.php?categoryid=8" target="_blank" style="margin-top: 15px;">
+                    📖 Review: NFRS Learn RTC Modules
+                </a>
+            </div>
+            
+            <div class="nav-buttons">
+                <button class="nav-btn prev" onclick="goToPhase('phase5')">← Back</button>
+                <button class="nav-btn next" onclick="goToPhase('welcome')">Return to Start</button>
+            </div>
+        </div>
+        
+        <!-- Lightbox -->
+        <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+            <span class="lightbox-close">&times;</span>
+            <img src="" alt="Full size image" id="lightbox-img">
+        </div>
+    </div>
+    
+    <script>
+        // Navigation
+        const phases = ['welcome', 'phase1', 'phase2', 'phase3', 'phase4', 'handover', 'phase5', 'reflection'];
+        
+        function goToPhase(phaseId) {
+            // Hide all content
+            document.querySelectorAll('.content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            
+            // Show selected phase
+            document.getElementById(phaseId).classList.add('active');
+            document.querySelector(`[data-phase="${phaseId}"]`).classList.add('active');
+            
+            // Update progress bar
+            const index = phases.indexOf(phaseId);
+            const progress = (index / (phases.length - 1)) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+        
+        // Tab click handlers
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                goToPhase(tab.dataset.phase);
+            });
+        });
+        
+        // Reveal toggle
+        function toggleReveal(button) {
+            const content = button.nextElementSibling;
+            button.classList.toggle('open');
+            content.classList.toggle('open');
+        }
+        
+        // Lightbox
+        function openLightbox(imgId) {
+            const thumbMap = {
+                'img1': 'images/img1.jpg',
+                'img2': 'images/img2.jpg',
+                'img3': 'images/img3.jpg',
+                'img4': 'images/img4.jpg'
+            };
+            document.getElementById('lightbox-img').src = thumbMap[imgId];
+            document.getElementById('lightbox').classList.add('open');
+        }
+        
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('open');
+        }
+        
+        // Progressive injects
+        let currentInject = 1;
+        const totalInjects = 6;
+        
+        function revealInject(injectNum) {
+            // Only allow revealing the current inject
+            if (injectNum !== currentInject) return;
+            
+            const injectEl = document.getElementById('inject' + injectNum);
+            const dotEl = document.getElementById('dot' + injectNum);
+            
+            // Mark as revealed
+            injectEl.classList.remove('unlocked');
+            injectEl.classList.add('revealed');
+            dotEl.classList.remove('current');
+            dotEl.classList.add('complete');
+            
+            // Unlock next inject
+            if (injectNum < totalInjects) {
+                const nextInject = document.getElementById('inject' + (injectNum + 1));
+                const nextDot = document.getElementById('dot' + (injectNum + 1));
+                nextInject.classList.remove('locked');
+                nextInject.classList.add('unlocked');
+                nextDot.classList.add('current');
+                currentInject = injectNum + 1;
+            }
+        }
+        
+        // Reset injects when returning to phase 4
+        function resetInjects() {
+            currentInject = 1;
+            for (let i = 1; i <= totalInjects; i++) {
+                const injectEl = document.getElementById('inject' + i);
+                const dotEl = document.getElementById('dot' + i);
+                if (injectEl && dotEl) {
+                    injectEl.classList.remove('revealed', 'unlocked', 'locked');
+                    dotEl.classList.remove('complete', 'current');
+                    if (i === 1) {
+                        injectEl.classList.add('unlocked');
+                        dotEl.classList.add('current');
+                    } else {
+                        injectEl.classList.add('locked');
+                    }
+                }
+            }
+        }
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeLightbox();
+            }
+        });
+    </script>
+</body>
+</html>
