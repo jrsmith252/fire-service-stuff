@@ -1,0 +1,1387 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BA Sector Command</title>
+<style>
+:root{
+  --board:#EEF1F0;        /* acrylic board */
+  --panel:#FFFFFF;
+  --ink:#14181A;          /* marker black */
+  --ink-2:#4A5457;
+  --rule:#14181A;
+  --rule-soft:#C3CAC8;
+  --band:#F7C948;         /* sector header band */
+  --red:#C8102E;          /* BA emergency */
+  --red-wash:#FBE3E7;
+  --blue:#1B5D8F;         /* committed */
+  --blue-wash:#E2ECF4;
+  --amber:#B8730C;        /* pending */
+  --amber-wash:#FBEFD9;
+  --green:#12704C;        /* ready / rested */
+  --green-wash:#DDEEE6;
+  --sans:ui-sans-serif,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--board); color:var(--ink); font-family:var(--sans);
+  font-size:15px; line-height:1.45; -webkit-text-size-adjust:100%;
+}
+.num,.t{font-family:var(--mono); font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+button{font:inherit; color:inherit; cursor:pointer}
+input,select,textarea{font:inherit; color:inherit}
+h1,h2,h3{margin:0; font-weight:650; letter-spacing:-.015em}
+
+/* ---------- shell ---------- */
+.topbar{
+  position:sticky; top:0; z-index:40; background:var(--ink); color:#fff;
+  border-bottom:3px solid var(--band);
+  display:flex; align-items:stretch; gap:0; flex-wrap:wrap;
+}
+.clock{
+  padding:.5rem 1.1rem; border-right:1px solid #333B3E; display:flex;
+  flex-direction:column; justify-content:center; min-width:9.5rem;
+}
+.clock .t{font-size:2.1rem; font-weight:600; line-height:1}
+.clock .lbl{font-size:.62rem; text-transform:uppercase; letter-spacing:.14em; color:#9AA5A8}
+.topmeta{display:flex; align-items:center; gap:1.4rem; padding:.5rem 1.1rem; flex:1; flex-wrap:wrap}
+.topmeta div{display:flex; flex-direction:column}
+.topmeta .lbl{font-size:.62rem; text-transform:uppercase; letter-spacing:.14em; color:#9AA5A8}
+.topmeta .val{font-size:.95rem; font-weight:600}
+.tabs{display:flex; align-items:stretch}
+.tabs button{
+  background:none; border:0; border-left:1px solid #333B3E; color:#B9C2C4;
+  padding:0 1.05rem; font-size:.78rem; text-transform:uppercase; letter-spacing:.1em; font-weight:600;
+}
+.tabs button[aria-selected="true"]{background:var(--band); color:var(--ink)}
+.tabs button:focus-visible{outline:3px solid #fff; outline-offset:-3px}
+
+.wrap{max-width:1500px; margin:0 auto; padding:1.1rem}
+
+/* ---------- alerts ---------- */
+.alerts{display:flex; flex-direction:column; gap:.35rem; margin-bottom:1rem}
+.alert{
+  display:flex; align-items:center; gap:.7rem; padding:.55rem .8rem;
+  border:2px solid var(--rule); border-left-width:9px; background:var(--panel); font-weight:600;
+}
+.alert.red{border-left-color:var(--red); background:var(--red-wash)}
+.alert.amber{border-left-color:var(--amber); background:var(--amber-wash)}
+.alert.green{border-left-color:var(--green); background:var(--green-wash)}
+.alert .t{margin-left:auto; font-size:1.15rem; font-weight:700}
+
+/* ---------- panels ---------- */
+.grid{display:grid; gap:1rem}
+.ecpgrid{grid-template-columns:repeat(auto-fill,minmax(315px,1fr))}
+.panel{background:var(--panel); border:2px solid var(--rule)}
+.panel > header{
+  background:var(--band); border-bottom:2px solid var(--rule);
+  padding:.4rem .7rem; display:flex; align-items:baseline; gap:.6rem;
+}
+.panel > header h3{font-size:1rem; text-transform:uppercase; letter-spacing:.06em}
+.panel > header .sub{font-size:.75rem; color:#5A4A12; margin-left:auto; font-weight:600}
+.panel.closed{opacity:.5}
+.panel.closed > header{background:var(--rule-soft)}
+.panel.emg{border-color:var(--red)}
+.panel.emg > header{background:var(--red); color:#fff; border-bottom-color:var(--red)}
+.panel.emg > header .sub{color:#FBD7DE}
+.pbody{padding:.7rem}
+
+.stat{display:flex; align-items:baseline; gap:.5rem}
+.stats{display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin-bottom:.6rem}
+.tile{border:1px solid var(--rule-soft); padding:.45rem .55rem}
+.tile .lbl{font-size:.6rem; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-2)}
+.tile .v{font-size:1.7rem; font-weight:700; line-height:1.05}
+.tile.blue{background:var(--blue-wash); border-color:var(--blue)}
+.tile.amber{background:var(--amber-wash); border-color:var(--amber)}
+.tile.green{background:var(--green-wash); border-color:var(--green)}
+
+.row{display:flex; gap:.5rem; align-items:baseline; padding:.2rem 0; font-size:.85rem}
+.row .k{color:var(--ink-2); min-width:7.5rem}
+.row .v{font-weight:600}
+.chip{
+  display:inline-flex; align-items:center; gap:.35rem; padding:.1rem .45rem;
+  border:1px solid var(--rule); font-size:.72rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.chip.blue{background:var(--blue); color:#fff; border-color:var(--blue)}
+.chip.amber{background:var(--amber); color:#fff; border-color:var(--amber)}
+.chip.red{background:var(--red); color:#fff; border-color:var(--red)}
+.chip.green{background:var(--green); color:#fff; border-color:var(--green)}
+.chip.grey{background:var(--rule-soft)}
+
+.pend{border:1px solid var(--rule-soft); border-left:6px solid var(--amber); padding:.4rem .55rem; margin-top:.4rem}
+.pend.late{border-left-color:var(--red); background:var(--red-wash)}
+.pend .hd{display:flex; align-items:baseline; gap:.5rem}
+.pend .hd .t{margin-left:auto; font-weight:700; font-size:1.05rem}
+
+table{width:100%; border-collapse:collapse; font-size:.85rem}
+th,td{text-align:left; padding:.32rem .45rem; border-bottom:1px solid var(--rule-soft)}
+th{font-size:.62rem; text-transform:uppercase; letter-spacing:.1em; color:var(--ink-2); font-weight:700}
+td.n,th.n{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:0}
+
+/* ---------- buttons ---------- */
+.btn{
+  border:2px solid var(--rule); background:var(--panel); padding:.45rem .85rem;
+  font-weight:650; letter-spacing:.01em;
+}
+.btn:hover{background:var(--band)}
+.btn:focus-visible{outline:3px solid var(--blue); outline-offset:2px}
+.btn.primary{background:var(--ink); color:#fff}
+.btn.primary:hover{background:var(--blue); border-color:var(--blue)}
+.btn.danger{background:var(--red); color:#fff; border-color:var(--red)}
+.btn.big{font-size:1.05rem; padding:.7rem 1.3rem}
+.btn.sm{padding:.22rem .5rem; font-size:.78rem; border-width:1px}
+.btn[disabled]{opacity:.4; cursor:not-allowed}
+.bar{display:flex; gap:.6rem; flex-wrap:wrap; align-items:center; margin-bottom:1rem}
+.bar .spacer{flex:1}
+
+/* ---------- forms ---------- */
+label{display:block; font-size:.68rem; text-transform:uppercase; letter-spacing:.1em;
+      color:var(--ink-2); font-weight:700; margin-bottom:.2rem}
+input[type=text],input[type=number],input[type=time],select,textarea{
+  width:100%; padding:.45rem .55rem; border:2px solid var(--rule); background:#fff;
+}
+input:focus,select:focus,textarea:focus{outline:3px solid var(--blue); outline-offset:-1px}
+.field{margin-bottom:.75rem}
+.fields{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.75rem}
+.hint{font-size:.75rem; color:var(--ink-2); margin-top:.2rem; text-transform:none; letter-spacing:0; font-weight:400}
+
+/* ---------- modal ---------- */
+.scrim{position:fixed; inset:0; background:rgba(20,24,26,.62); display:flex;
+       align-items:flex-start; justify-content:center; padding:1.2rem; overflow:auto; z-index:60}
+.modal{background:var(--board); border:3px solid var(--ink); width:min(760px,100%)}
+.modal > header{background:var(--ink); color:#fff; padding:.6rem .9rem; display:flex; align-items:center}
+.modal > header h2{font-size:1.05rem; text-transform:uppercase; letter-spacing:.08em}
+.modal > header button{background:none; border:0; color:#fff; font-size:1.4rem; margin-left:auto; line-height:1}
+.mbody{padding:.9rem}
+.mfoot{padding:.9rem; border-top:2px solid var(--rule); display:flex; gap:.6rem; align-items:center}
+.errs{border:2px solid var(--red); background:var(--red-wash); padding:.55rem .7rem; margin-bottom:.8rem}
+.errs li{font-weight:600}
+.errs ul{margin:.2rem 0 0 1rem; padding:0}
+
+.timebox{border:2px solid var(--rule); background:var(--panel); padding:.6rem; margin-bottom:.9rem}
+.timebox .hdr{display:flex; align-items:center; gap:.6rem; margin-bottom:.4rem}
+.timebox .hdr .lbl{margin:0}
+.timebox .now{margin-left:auto; font-size:.78rem; color:var(--ink-2)}
+.timebox.adj{border-color:var(--amber); background:var(--amber-wash)}
+
+.empty{border:2px dashed var(--rule-soft); padding:2rem; text-align:center; color:var(--ink-2)}
+.setup{max-width:640px; margin:3rem auto}
+.setup .lead{font-size:1.05rem; color:var(--ink-2); margin:.6rem 0 1.6rem}
+.setup h1{font-size:2rem}
+.rule{height:2px; background:var(--rule); margin:1.2rem 0}
+.mini{font-size:.75rem; color:var(--ink-2)}
+.logline{border-bottom:1px solid var(--rule-soft); padding:.4rem .2rem; display:flex; gap:.7rem; align-items:baseline}
+.logline .t{font-weight:700; min-width:3.6rem}
+.logline .body{flex:1}
+.logline .flagt{background:var(--amber-wash); border:1px solid var(--amber); padding:0 .3rem; font-size:.7rem}
+@media (max-width:620px){
+  .clock .t{font-size:1.6rem}
+  .wrap{padding:.7rem}
+}
+@media (prefers-reduced-motion:no-preference){
+  .alert.red{animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{background:var(--red-wash)}50%{background:#F6CDD4}}
+}
+</style>
+
+<div id="app"></div>
+
+<script>
+"use strict";
+
+/* =====================================================================
+   State
+   ===================================================================== */
+const KEY = "ba-sector-command-v1";
+let S = blank();
+let TAB = "board";
+let MODAL = null;
+
+function blank(){
+  return { started:null, sector:[], ecps:[], revs:[], events:[], seq:0 };
+}
+// incident-level details are effective-dated, exactly like the ECPs
+const SECTOR_FIELDS = [["number","incident number"],["incLoc","incident location"],
+                       ["ic","Incident Commander"],["basc","BA Sector Commander"],
+                       ["loggist","loggist"],["sectorLoc","BA Sector location"]];
+function currentSector(){ return S.sector && S.sector.length ? S.sector[S.sector.length-1] : null; }
+function OP(){ const c = currentSector(); return c ? c.loggist : ""; }
+function changedFrom(prev, cur, fields){
+  if (!prev) return [];
+  return fields.filter(([k]) => String(prev[k] ?? "") !== String(cur[k] ?? "")).map(([,l]) => l);
+}
+const ECP_NAMES = ["Alpha","Bravo","Charlie","Delta","Echo","Foxtrot","Golf","Hotel"];
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+
+/* ---- time helpers ---- */
+const hhmm = ms => { const d=new Date(ms); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); };
+const hhmmss = ms => hhmm(ms)+":"+String(new Date(ms).getSeconds()).padStart(2,"0");
+function stampFrom(recorded, timeStr, note){
+  // build an effective timestamp from an HH:MM string on the recorded day
+  const d = new Date(recorded);
+  const [h,m] = timeStr.split(":").map(Number);
+  d.setHours(h, m, 0, 0);
+  let eff = d.getTime();
+  if (eff - recorded > 12*3600e3) eff -= 24*3600e3;   // entered a time before midnight
+  if (recorded - eff > 12*3600e3) eff += 24*3600e3;
+  const adjusted = Math.abs(eff - recorded) >= 60e3;
+  return { eff, rec:recorded, adjusted, note: adjusted ? (note||"") : "" };
+}
+
+/* ---- persistence ---- */
+async function save(){
+  try { if (window.storage) await window.storage.set(KEY, JSON.stringify(S)); } catch(e){}
+}
+async function restore(){
+  try {
+    if (window.storage){
+      const r = await window.storage.get(KEY);
+      if (r && r.value) return JSON.parse(r.value);
+    }
+  } catch(e){}
+  return null;
+}
+
+/* =====================================================================
+   Derivations
+   ===================================================================== */
+const evs = t => S.events.filter(e => e.type === t && !e.voided);
+const sumF = (t, f, pred) => evs(t).filter(pred||(()=>true)).reduce((a,e)=>a+(+e[f]||0),0);
+
+function currentRev(ecp){
+  const r = S.revs.filter(x => x.ecp === ecp);
+  return r.length ? r[r.length-1] : null;
+}
+function revAt(ecp, ms){
+  const r = S.revs.filter(x => x.ecp === ecp && x.t.eff <= ms);
+  return r.length ? r[r.length-1] : currentRev(ecp);
+}
+function openTeams(ecp){
+  const out = evs("Withdraw").map(e=>e.ref);
+  return evs("Commit").filter(e => (!ecp || e.ecp===ecp) && !out.includes(e.ref));
+}
+function restingGroups(){
+  const back = evs("From R/R").map(e=>e.ref);
+  return evs("To R/R").filter(e => !back.includes(e.ref));
+}
+function dueOut(e){
+  const mins = e.condition === "Hot and humid" ? 60 : 30;
+  return e.t.eff + mins*60e3;
+}
+function openRequests(ecp){
+  const done = evs("Dispatch").map(e=>e.requestId).filter(Boolean);
+  return evs("Request").filter(e => (!ecp || e.ecp===ecp) && !done.includes(e.id));
+}
+function dispatchBy(req){
+  if (!req.requiredAt) return null;
+  const rev = revAt(req.ecp, req.t.eff);
+  const offset = rev ? (+rev.offset||0) : 0;
+  const travel = rev ? (+rev.travel||0) : 0;
+  return req.requiredAt - offset*60e3 - (travel+5)*60e3;
+}
+function requestSummary(r){
+  return KIT.filter(k=>+r[k]>0).map(k=>`${r[k]} ${KIT_LABELS[k]}`).join(", ") || "resources";
+}
+function requiredMaster(req){
+  const rev = revAt(req.ecp, req.t.eff);
+  return req.requiredAt - (rev ? (+rev.offset||0) : 0)*60e3;
+}
+function committed(ecp){ return openTeams(ecp).reduce((a,e)=>a+(+e.wearers||0),0); }
+function standingBy(ecp){
+  return sumF("Opening position","preCommitted",e=>e.ecp===ecp)
+       + sumF("Opening position","preStanding",e=>e.ecp===ecp)
+       + sumF("Dispatch","wearers",e=>e.ecp===ecp)
+       - sumF("Commit","wearers",e=>e.ecp===ecp)
+       + sumF("Withdraw","wearers",e=>e.ecp===ecp && e.dest===W_STANDBY)
+       - sumF("Delivery","wearers",e=>e.ecp===ecp);
+}
+const CORE_KIT = ["wearers","setsReady","setsService","cylFull","cylEmpty","cylCharge","ecbs","tics"];
+const DUMP_KIT = ["ease","radios","radioBatt","trauma","halligan","crowbars","largeCrowbars",
+                  "axes","recipSaws","enforcers"];
+const KIT = [...CORE_KIT, ...DUMP_KIT];
+const KIT_LABELS = {wearers:"BA wearers", setsReady:"BA sets complete (incl. cylinder)",
+  setsService:"Sets to service", cylFull:"Spare cylinders (full)", cylEmpty:"Cylinders empty",
+  cylCharge:"Cylinders on charge", ecbs:"ECBs + tripods", tics:"TICs",
+  ease:"EASE sets", radios:"Radios", radioBatt:"Radio batteries", trauma:"Trauma bags",
+  halligan:"Halligan tools", crowbars:"Crow bars", largeCrowbars:"Large crow bars",
+  axes:"Large axes", recipSaws:"Reciprocating saws", enforcers:"Enforcer tools"};
+function stock(){
+  const s = {}; KIT.forEach(k => s[k]=0); s.wearersRR = 0; s.finished = 0;
+  for (const e of S.events){
+    if (e.type==="Delivery")      KIT.forEach(k => s[k] += (+e[k]||0));
+    else if (e.type==="Opening position" && !e.ecp) KIT.forEach(k => s[k] += (+e[k]||0));
+    else if (e.type==="Dispatch") KIT.forEach(k => s[k] -= (+e[k]||0));
+    else if (e.type==="Recondition"||e.type==="Adjustment") KIT.forEach(k => s[k] += (+e[k]||0));
+    else if (e.type==="Withdraw"){
+      // finished wearers leave the figures entirely; the other two rejoin the pool, and a
+      // generated To R/R line then moves the resting group straight on into R/R
+      if (e.dest===W_RR || e.dest===W_POOL) s.wearers += (+e.wearers||0);
+      else if (e.dest===W_FINISHED) s.finished = (s.finished||0) + (+e.wearers||0);
+    }
+    else if (e.type==="To R/R")   { s.wearers -= (+e.wearers||0); s.wearersRR += (+e.wearers||0); }
+    else if (e.type==="From R/R") { s.wearers += (+e.wearers||0); s.wearersRR -= (+e.wearers||0); }
+  }
+  return s;
+}
+function activeEcps(){ return S.ecps.filter(n => { const r=currentRev(n); return r && r.status!=="Closed"; }); }
+function emergency(){ const e = evs("BA Emergency"); return e.length ? e[e.length-1] : null; }
+
+/* =====================================================================
+   Event definitions — this is what the spreadsheet could not do
+   ===================================================================== */
+const N = (k,l,h) => ({k, l, type:"number", hint:h});
+const KIT_FIELDS = CORE_KIT.map(k => N(k, KIT_LABELS[k]));
+const DUMP_FIELDS = DUMP_KIT.map(k => ({...N(k, KIT_LABELS[k]), dump:true}));
+const ALL_KIT_FIELDS = [...KIT_FIELDS, ...DUMP_FIELDS];
+const W_FINISHED = "Finished with BA for this incident";
+const W_RR       = "Going to rest and recuperation";
+const W_STANDBY  = "Standing by at the ECP";
+const W_POOL     = "Returning to the BA Sector, available";
+const K_BACK = "Coming back to the BA Sector";
+const K_STAY = "Staying at the ECP";
+const teamSize = ref => { const t = openTeams().find(x => x.ref === ref); return t ? +t.wearers||0 : 0; };
+
+const SCOPE = {k:"scope", l:"What are you recording?", type:"select",
+               opts:["An entry control point","BA Sector reserves"], repaint:true};
+function fieldsFor(type, vals){
+  const f = DEFS[type].fields;
+  return typeof f === "function" ? f(vals||{}) : f;
+}
+const DEFS = {
+  "Commit":{ blurb:"One line per team. Name the team so you can withdraw it later. Teams already in when the sector took over need an Opening position first.",
+    fields:[{k:"ecp",l:"Entry control point",type:"ecp"},
+            {k:"ref",l:"Team reference",type:"text",hint:"e.g. A1"},
+            N("wearers","Wearers in this team")] },
+  "Withdraw":{ blurb:"Most wearers are finished with BA once they come out. What matters next is where their kit has gone.",
+    fields:(v) => {
+      const n = teamSize(v.ref);
+      return [
+      {k:"ref", l:"Team", type:"team", repaint:true},
+      {k:"dest", l:"The wearers are", type:"select", repaint:true,
+       opts:[W_FINISHED, W_RR, W_STANDBY, W_POOL],
+       hint:"Finished means out of the figures — not standing by, not in the pool."},
+      ...(v.dest === W_RR
+        ? [{k:"rrRef", l:"R/R group reference", type:"text",
+            hint:"e.g. R1 — so this group is released on its own clock"},
+           {k:"rrCondition", l:"They worked in", type:"choose", opts:["Ambient","Hot and humid"]}]
+        : []),
+      {k:"kitDest", l:"Their sets and equipment are", type:"choose", repaint:true, opts:[K_BACK, K_STAY]},
+      ...(v.kitDest === K_BACK
+        ? [{k:"setsService", l:"Sets to service", type:"number", val:n},
+           {k:"cylEmpty", l:"Empty cylinders", type:"number", val:n},
+           {k:"ecbs", l:"ECBs", type:"number", val:0},
+           {k:"tics", l:"TICs", type:"number", val:0}]
+        : [])];
+    } },
+  "Request":{ blurb:"Wearers, equipment, or both. Enter the time exactly as the ECPS gave it, off their own board clock — leave it blank if they want it as soon as possible.",
+    fields:[{k:"ecp",l:"Entry control point",type:"ecp"},
+            N("wearers","Wearers required"),
+            {k:"requiredAtStr",l:"Required at (their board clock)",type:"time"},
+            N("setsReady","BA sets complete (incl. cylinder)"), N("cylFull","Spare cylinders"),
+            N("ecbs","ECBs + tripods"), N("tics","TICs"),
+            ...DUMP_FIELDS] },
+  "Dispatch":{ blurb:"Resources leaving the BA Sector.",
+    fields:[{k:"ecp",l:"Entry control point",type:"ecp"},
+            {k:"requestId",l:"Fulfils request",type:"request"},
+            N("wearers","BA wearers"), N("setsReady","BA sets complete (incl. cylinder)"),
+            N("cylFull","Spare cylinders"), N("ecbs","ECBs + tripods"), N("tics","TICs"),
+            ...DUMP_FIELDS,
+            {k:"owner",l:"Owner",type:"select",opts:["Own service","Other FRS","Other agency"]}] },
+  "Delivery":{ blurb:"Resources arriving at the BA Sector — from outside, or back from an ECP. For kit that was already on the ground when you took over, use Opening position instead.",
+    fields:[{k:"ecp",l:"Coming back from",type:"source"}, ...ALL_KIT_FIELDS,
+            {k:"owner",l:"Owner",type:"select",opts:["Own service","Other FRS","Other agency"]}] },
+  "To R/R":{ blurb:"Name the group so it can be released as a group, not merged with the next one.",
+    fields:[{k:"ref",l:"Group reference",type:"text",hint:"e.g. R1"},
+            N("wearers","Wearers resting"),
+            {k:"condition",l:"They worked in",type:"select",opts:["Ambient","Hot and humid"]}] },
+  "From R/R":{ blurb:"A group cannot be released before its own rest period is complete.",
+    fields:[{k:"ref",l:"Group",type:"group"}] },
+  "Recondition":{ blurb:"Kit changing state without going anywhere. Use negatives for what leaves a column.",
+    fields:KIT_FIELDS.slice(1) },
+  "Adjustment":{ blurb:"A signed correction when the physical count disagrees with the board.",
+    fields:ALL_KIT_FIELDS },
+  "Stock check":{ blurb:"The board's expected figures are filled in. Confirm them, or type what you actually count — differences are recorded and the board is corrected.",
+    fields:() => { const cur = stock();
+      return KIT.map(k => ({...N(k, KIT_LABELS[k]), val:cur[k],
+                            dump:DUMP_KIT.includes(k)})); } },
+  "BA Emergency":{ blurb:"Record what you know now. Add further detail as Notes.",
+    fields:[{k:"ecp",l:"Entry control point",type:"ecp"},
+            {k:"msgSent",l:"Emergency message sent to Control",type:"select",opts:["Not yet","Yes"]},
+            {k:"location",l:"Location — sector, where in the building",type:"text"},
+            {k:"who",l:"Who is involved — which team(s)",type:"text"},
+            {k:"what",l:"What is involved",type:"text"},
+            {k:"deployed",l:"Resources deployed",type:"text"}] },
+  "Opening position":{ blurb:"What was already there when the BA Sector took over — not something that has arrived since.",
+    fields:(v) => v.scope === "BA Sector reserves"
+      ? [SCOPE, ...ALL_KIT_FIELDS,
+         {k:"owner",l:"Owner",type:"select",opts:["Own service","Other FRS","Other agency"]}]
+      : [SCOPE, {k:"ecp",l:"Entry control point",type:"ecp",repaint:true},
+         N("preStanding","Wearers standing by at the ECP"),
+         {k:"teams",l:"Teams already committed",type:"teams"},
+         {k:"at_tics",l:"TICs",type:"number",dump:true,at:true},
+         {k:"at_ease",l:"EASE sets",type:"number",dump:true,at:true},
+         {k:"at_radios",l:"Radios",type:"number",dump:true,at:true},
+         {k:"at_ecbs",l:"ECBs + tripods",type:"number",dump:true,at:true},
+         {k:"at_trauma",l:"Trauma bags",type:"number",dump:true,at:true},
+         ...(S.events.some(x=>x.type==="Opening position" && x.ecp===v.ecp)
+            ? [{k:"correct",l:"This corrects the earlier opening position for this ECP",type:"check"}]
+            : [])] },
+  "Note":{ blurb:"", fields:[] }
+};
+const EVENT_ORDER = ["Opening position","Commit","Withdraw","Request","Dispatch","Delivery",
+                     "To R/R","From R/R","Recondition","Adjustment","Stock check",
+                     "BA Emergency","Note"];
+
+/* =====================================================================
+   Validation — the app refuses, it does not merely flag
+   ===================================================================== */
+function validate(type, p, nowEff){
+  const e = [], w = [];
+  const num = k => +p[k] || 0;
+  const s = stock();
+  if (type==="Commit"){
+    if (!p.ecp) e.push("Choose an entry control point.");
+    if (!p.ref) e.push("Give the team a reference.");
+    else if (S.events.some(x=>x.type==="Commit" && x.ref===p.ref && !x.voided)) e.push(`Reference ${p.ref} has already been used.`);
+    if (num("wearers")<1) e.push("A team needs at least one wearer.");
+    else if (num("wearers")>standingBy(p.ecp)) e.push(`Only ${standingBy(p.ecp)} standing by at ${p.ecp}.`);
+  }
+  if (type==="Withdraw"){
+    if (!p.ref) e.push("Choose the team coming out.");
+    if (!p.kitDest) e.push("Say where their sets and equipment have gone.");
+    if (p.dest===W_RR){
+      if (!p.rrRef) e.push("Give the rest group a reference.");
+      else if (S.events.some(x=>x.type==="To R/R" && x.ref===p.rrRef))
+        e.push(`Reference ${p.rrRef} has already been used.`);
+      if (!p.rrCondition) e.push("Say what conditions they worked in — it sets the rest period.");
+    }
+  }
+  if (type==="Request"){
+    if (!p.ecp) e.push("Choose an entry control point.");
+    if (KIT.every(k=>num(k)===0)) e.push("Say what is required — wearers, equipment, or both.");
+  }
+  if (type==="Dispatch"){
+    if (!p.ecp) e.push("Choose an entry control point.");
+    if (num("wearers")>s.wearers) e.push(`Only ${s.wearers} wearers ready — you cannot send ${num("wearers")}.`);
+    if (num("setsReady")>s.setsReady) e.push(`Only ${s.setsReady} sets ready for use.`);
+    if (num("cylFull")>s.cylFull) e.push(`Only ${s.cylFull} full cylinders.`);
+    if (num("ecbs")>s.ecbs) e.push(`Only ${s.ecbs} ECBs available.`);
+    if (num("tics")>s.tics) e.push(`Only ${s.tics} TICs available.`);
+    if (KIT.every(k=>num(k)===0)) e.push("A dispatch has to contain something.");
+  }
+  if (type==="Delivery"){
+    if (p.ecp && p.ecp!=="External" && num("wearers")>standingBy(p.ecp))
+      e.push(`Only ${standingBy(p.ecp)} wearers standing by at ${p.ecp}.`);
+    if (KIT.every(k=>num(k)===0)) e.push("A delivery has to contain something.");
+  }
+  if (type==="To R/R"){
+    if (!p.ref) e.push("Give the group a reference.");
+    else if (S.events.some(x=>x.type==="To R/R" && x.ref===p.ref)) e.push(`Reference ${p.ref} has already been used.`);
+    if (num("wearers")<1) e.push("Say how many are going to rest.");
+    else if (num("wearers")>s.wearers) e.push(`Only ${s.wearers} wearers ready.`);
+    if (!p.condition) e.push("Say what conditions they worked in.");
+  }
+  if (type==="From R/R"){
+    if (!p.ref) e.push("Choose the group coming back on the run.");
+    else {
+      const g = restingGroups().find(x=>x.ref===p.ref);
+      if (g && nowEff < dueOut(g)){
+        if (!p.releaseEarly)
+          e.push(`${p.ref} is not rested until ${hhmm(dueOut(g))}. Tick "release early" if you are overriding this.`);
+      }
+    }
+  }
+  if (type==="Opening position"){
+    if (p.scope === "BA Sector reserves"){
+      if (S.events.some(x=>x.type==="Opening position" && !x.ecp))
+        e.push("The opening reserves have already been recorded. Use Adjustment to correct the count.");
+      if (KIT.every(k=>num(k)===0)) e.push("Record what was already on the ground.");
+    } else {
+      const teams = (p.teams||[]).filter(t => t.ref || +t.wearers > 0);
+      if (!p.ecp) e.push("Choose an entry control point.");
+      else if (S.events.some(x=>x.type==="Opening position" && x.ecp===p.ecp && !x.voided) && !p.correct)
+        e.push(`The opening position at ${p.ecp} has already been recorded. Tick the correction box if this replaces it.`);
+      const total = teams.reduce((a,t)=>a+(+t.wearers||0),0);
+      if (total + num("preStanding") < 1) e.push("Record how many wearers were already there.");
+      if (teams.some(t=>!t.ref)) e.push("Every team needs a reference.");
+      if (teams.some(t=>!(+t.wearers > 0))) e.push("Every team needs a size.");
+      teams.filter(t=>t.ref).forEach(t => {
+        if (S.events.some(x=>x.type==="Commit" && x.ref===t.ref && !x.voided &&
+            !(p.correct && x.fromOpening && x.ecp===p.ecp)))
+          e.push(`Reference ${t.ref} has already been used.`);
+      });
+      const refs = teams.filter(t=>t.ref).map(t=>t.ref);
+      if (new Set(refs).size !== refs.length) e.push("Two of these teams have the same reference.");
+    }
+  }
+  if (type==="BA Emergency" && !p.ecp) e.push("Which entry control point?");
+  if (type==="Note" && !p.note) e.push("Write the note.");
+  return {errors:e, warnings:w};
+}
+
+/* =====================================================================
+   Render
+   ===================================================================== */
+const el = (h) => { const d=document.createElement("div"); d.innerHTML=h.trim(); return d.firstElementChild; };
+const esc = (s) => String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function render(){
+  const app = document.getElementById("app");
+  app.innerHTML = "";
+  if (!S.started){
+    app.appendChild(setupScreen());
+    if (MODAL) app.appendChild(MODAL());
+    return;
+  }
+  app.appendChild(topbar());
+  const wrap = el(`<div class="wrap"></div>`);
+  if (TAB==="board") wrap.appendChild(boardView());
+  if (TAB==="ecps")  wrap.appendChild(ecpView());
+  if (TAB==="log")   wrap.appendChild(logView());
+  app.appendChild(wrap);
+  if (MODAL) app.appendChild(MODAL());
+  tick();
+}
+
+/* ---------- setup ---------- */
+function setupScreen(){
+  const d = el(`<div class="wrap"><div class="setup">
+    <h1>BA Sector Command</h1>
+    <p class="lead">Nothing is recorded until the sector is established. Everything after that is
+       timestamped against this device's clock, which becomes the master clock for the incident.</p>
+    <button class="btn primary big" id="est">Establish BA Sector</button>
+    <div class="rule"></div>
+    <p class="mini">Working from an incident record already in progress? <button class="btn sm" id="imp">Load a saved incident</button></p>
+  </div></div>`);
+  d.querySelector("#est").onclick = () => { MODAL = establishModal; render(); };
+  d.querySelector("#imp").onclick = importFile;
+  return d;
+}
+
+function establishModal(){
+  const rec = Date.now();
+  const m = el(`<div class="scrim"><div class="modal" role="dialog" aria-modal="true">
+    <header><h2>Establish BA Sector</h2><button aria-label="Close" id="x">&times;</button></header>
+    <div class="mbody">
+      <div id="err"></div>
+      ${timeboxHTML("Time BA Sector established", hhmm(rec))}
+      <div class="field"><label for="ic">Incident Commander</label>
+        <input type="text" id="ic" autocomplete="off"></div>
+      <div class="fields">
+        <div class="field"><label for="basc">BA Sector Commander</label>
+          <input type="text" id="basc" autocomplete="off">
+          <div class="hint">The appointed role, whether or not that is you.</div></div>
+        <div class="field"><label for="op">Loggist — your name</label>
+          <input type="text" id="op" autocomplete="off">
+          <div class="hint">Recorded against every entry you make.</div></div>
+      </div>
+      <div class="fields">
+        <div class="field"><label for="no">Incident number</label>
+          <input type="text" id="no" autocomplete="off">
+          <div class="hint">Leave blank if it has not come through yet — you can add it later.</div></div>
+        <div class="field"><label for="incLoc">Incident location</label>
+          <input type="text" id="incLoc" autocomplete="off" placeholder="optional"></div>
+      </div>
+      <div class="fields">
+        <div class="field"><label for="sectorLoc">BA Sector location</label>
+          <input type="text" id="sectorLoc" autocomplete="off"
+                 placeholder="e.g. car park, north of the ISU"></div>
+        <div class="field"><label for="n">Entry control points open now</label>
+          <select id="n">${[1,2,3,4,5,6,7,8].map(i=>`<option ${i===1?"selected":""}>${i}</option>`).join("")}</select>
+          <div class="hint">Open more from the ECPs tab as the incident grows.</div></div>
+      </div>
+    </div>
+    <div class="mfoot"><button class="btn primary" id="go">Establish BA Sector</button>
+      <button class="btn" id="cancel">Cancel</button></div>
+  </div></div>`);
+  wireTimebox(m, rec);
+  m.querySelector("#x").onclick = m.querySelector("#cancel").onclick = () => { MODAL=null; render(); };
+  m.querySelector("#go").onclick = () => {
+    const ic = m.querySelector("#ic").value.trim();
+    const basc = m.querySelector("#basc").value.trim();
+    const op = m.querySelector("#op").value.trim();
+    const bad = [];
+    if (!ic) bad.push("Name the Incident Commander.");
+    if (!basc) bad.push("Name the BA Sector Commander.");
+    if (!op) bad.push("Give your own name — it goes against every entry you make.");
+    if (bad.length){ showErrs(m, bad); return; }
+    const {timeStr, note} = readTimebox(m);
+    const n = +m.querySelector("#n").value;
+    S = blank();
+    S.started = stampFrom(rec, timeStr, note);
+    S.sector = [{ id:uid(), t:{...S.started}, number:m.querySelector("#no").value.trim(),
+                  incLoc:m.querySelector("#incLoc").value.trim(),
+                  sectorLoc:m.querySelector("#sectorLoc").value.trim(),
+                  ic, basc, loggist:op, note:"BA Sector established", by:op }];
+    S.ecps = ECP_NAMES.slice(0,n);
+    S.ecps.forEach(name => S.revs.push({
+      id:uid(), ecp:name, t:{...S.started}, status:"Open", location:"", sector:"", sc:"", ecpsName:"",
+      eco:"", comms:"", radio:"", otherComms:"", offset:0, travel:0, emSizes:[],
+      note:"Opened with the BA Sector", by:op
+    }));
+    MODAL = null; TAB = "ecps"; save(); render();
+  };
+  return m;
+}
+
+/* ---------- shared timestamp control ---------- */
+function timeboxHTML(label, now){
+  return `<div class="timebox" id="tb">
+    <div class="hdr"><label class="lbl" for="tin">${label}</label>
+      <span class="now mini">Master clock <span class="t" id="tbnow">${now}</span></span></div>
+    <input type="time" id="tin" value="${now}" step="60">
+    <div id="tnote" hidden style="margin-top:.5rem">
+      <label for="tnv">Why is this time different from now? <span class="hint" style="display:inline">Worth recording, but you can leave it</span></label>
+      <input type="text" id="tnv" autocomplete="off" placeholder="e.g. logged retrospectively after dealing with the ECP">
+    </div></div>`;
+}
+function wireTimebox(root, rec){
+  const tb = root.querySelector("#tb"); if (!tb) return;
+  const inp = tb.querySelector("#tin"), note = tb.querySelector("#tnote");
+  inp.oninput = () => {
+    const changed = inp.value !== hhmm(rec);
+    note.hidden = !changed; tb.classList.toggle("adj", changed);
+  };
+}
+function readTimebox(root){
+  const tb = root.querySelector("#tb");
+  if (!tb) return {timeStr:hhmm(Date.now()), note:"", adjusted:false};
+  const timeStr = tb.querySelector("#tin").value;
+  const note = tb.querySelector("#tnv") ? tb.querySelector("#tnv").value.trim() : "";
+  return { timeStr, note, adjusted: !tb.querySelector("#tnote").hidden };
+}
+function showErrs(root, list){
+  const box = root.querySelector("#err");
+  box.innerHTML = `<div class="errs"><strong>Cannot record this yet</strong>
+    <ul>${list.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
+  try { box.scrollIntoView({block:"nearest"}); } catch(e){}
+}
+
+/* ---------- topbar ---------- */
+function topbar(){
+  const inc = currentSector() || {};
+  const t = el(`<div class="topbar">
+    <div class="clock"><span class="lbl">Master clock</span><span class="t" id="clk">${hhmmss(Date.now())}</span></div>
+    <div class="topmeta">
+      <div><span class="lbl">Incident</span><span class="val num">${esc(inc.number||"—")}</span></div>
+      <div><span class="lbl">Incident Commander</span><span class="val">${esc(inc.ic)}</span></div>
+      <div><span class="lbl">BA Sector Commander</span><span class="val">${esc(inc.basc||"—")}</span></div>
+      <div><span class="lbl">BA Sector at</span><span class="val">${esc(inc.sectorLoc||"—")}</span></div>
+      <div><span class="lbl">Established</span><span class="val t">${hhmm(S.started.eff)}</span></div>
+      <div><span class="lbl">Loggist</span><span class="val">${esc(inc.loggist||"—")}</span></div>
+      <div style="justify-content:center"><button class="btn sm" id="roles">Roles &amp; details</button></div>
+    </div>
+    <div class="tabs">
+      ${["board","ecps","log"].map(k=>`<button data-tab="${k}" aria-selected="${TAB===k}">${
+        k==="board"?"Board":k==="ecps"?"ECPs":"Log"}</button>`).join("")}
+    </div></div>`);
+  t.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => { TAB=b.dataset.tab; render(); });
+  t.querySelector("#roles").onclick = () => { MODAL = sectorModal; render(); };
+  return t;
+}
+function tick(){
+  const c = document.getElementById("clk");
+  if (c) c.textContent = hhmmss(Date.now());
+  document.querySelectorAll("[data-count]").forEach(n => {
+    const mins = Math.round((+n.dataset.count - Date.now())/60e3);
+    n.textContent = (mins<0?"−":"") + Math.abs(mins) + " min";
+    const host = n.closest("[data-late]");
+    if (host) host.classList.toggle("late", mins < 0);
+  });
+}
+setInterval(tick, 1000);
+
+/* ---------- board ---------- */
+function boardView(){
+  const frag = document.createDocumentFragment();
+  const s = stock();
+  const emg = emergency();
+
+  // alerts
+  const alerts = [];
+  if (emg) alerts.push({c:"red", txt:`BA EMERGENCY at ${emg.ecp} — declared ${hhmm(emg.t.eff)}${
+    emg.msgSent==="Yes" ? ", message sent to Control" : ", message NOT yet sent to Control"}`});
+  activeEcps().forEach(n => openRequests(n).forEach(r => {
+    const by = dispatchBy(r);
+    if (by === null) alerts.push({c:"amber", txt:`${n} — ${requestSummary(r)} wanted as soon as possible`});
+    else alerts.push({c: by - Date.now() < 0 ? "red" : "amber",
+      txt:`${n} — send ${requestSummary(r)} by`, when:by});
+  }));
+  restingGroups().forEach(g => {
+    if (dueOut(g) <= Date.now()) alerts.push({c:"green", txt:`${g.ref} rested and ready — ${g.wearers} wearers`});
+  });
+  const last = evs("Stock check").slice(-1)[0];
+  const since = last ? Math.round((Date.now()-last.t.eff)/60e3) : Math.round((Date.now()-S.started.eff)/60e3);
+  if (since > 60) alerts.push({c:"red", txt:`Stock check overdue — ${since} minutes since the last one`});
+  else if (since > 30) alerts.push({c:"amber", txt:`Stock check due — ${since} minutes since the last one`});
+
+  if (alerts.length){
+    const a = el(`<div class="alerts"></div>`);
+    alerts.forEach(x => a.appendChild(el(`<div class="alert ${x.c}" ${x.when?'data-late':''}>
+      <span>${esc(x.txt)}</span>${x.when?`<span class="t" data-count="${x.when}"></span>`:""}</div>`)));
+    frag.appendChild(a);
+  }
+
+  // action bar
+  const bar = el(`<div class="bar">
+    <button class="btn primary big" id="log">Log an event</button>
+    <button class="btn" id="chk">Stock check</button>
+    <button class="btn danger" id="emg">BA Emergency</button>
+    <span class="spacer"></span>
+    <button class="btn sm" id="exp">Export incident record</button></div>`);
+  bar.querySelector("#log").onclick = () => { MODAL = () => eventModal(null); render(); };
+  bar.querySelector("#chk").onclick = () => { MODAL = () => eventModal("Stock check"); render(); };
+  bar.querySelector("#emg").onclick = () => { MODAL = () => eventModal("BA Emergency"); render(); };
+  bar.querySelector("#exp").onclick = exportFile;
+  frag.appendChild(bar);
+
+  // reserves
+  const res = el(`<div class="panel" style="margin-bottom:1rem">
+    <header><h3>BA Sector reserves</h3><span class="sub">what is on the ground now</span></header>
+    <div class="pbody">${
+      (KIT.every(k=>!s[k]) && !s.wearersRR && !S.events.some(e=>e.type==="Opening position" && !e.ecp))
+        ? `<div style="margin-bottom:.7rem"><button class="btn sm" id="openres">Record opening reserves</button>
+           <span class="hint" style="display:inline; margin-left:.4rem">Sets, cylinders and wearers already on the ground when you took over.</span></div>`
+        : ""}<div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(125px,1fr))">
+      ${tile("Wearers ready", s.wearers, s.wearers>0?"green":"")}
+      ${tile("In R/R", s.wearersRR, s.wearersRR>0?"amber":"")}
+      ${tile("Sets ready", s.setsReady)}
+      ${tile("Sets to service", s.setsService)}
+      ${tile("Cylinders full", s.cylFull)}
+      ${tile("Cylinders empty", s.cylEmpty)}
+      ${tile("On charge", s.cylCharge)}
+      ${tile("ECBs", s.ecbs)}
+      ${tile("TICs", s.tics)}
+      ${tile("Finished with BA", s.finished)}
+    </div>
+    ${DUMP_KIT.some(k=>s[k]) ? `<div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); margin-top:.4rem">
+      ${DUMP_KIT.filter(k=>s[k]).map(k=>tile(KIT_LABELS[k], s[k])).join("")}
+    </div>` : ""}${restingGroups().length ? `<table><thead><tr><th>Group</th><th class="n">Wearers</th>
+      <th>Worked in</th><th>Rested at</th><th></th></tr></thead><tbody>
+      ${restingGroups().map(g=>`<tr><td><strong>${esc(g.ref)}</strong></td><td class="n">${g.wearers}</td>
+        <td>${esc(g.condition)}</td><td class="t">${hhmm(dueOut(g))}</td>
+        <td class="n"><span class="t" data-count="${dueOut(g)}"></span></td></tr>`).join("")}
+      </tbody></table>` : ""}</div></div>`);
+  const orb = res.querySelector("#openres");
+  if (orb) orb.onclick = () => {
+    MODAL = () => eventModal("Opening position", {scope:"BA Sector reserves"}); render();
+  };
+  frag.appendChild(res);
+
+  // ecps
+  const g = el(`<div class="grid ecpgrid"></div>`);
+  S.ecps.forEach(n => g.appendChild(ecpPanel(n)));
+  frag.appendChild(g);
+  const d = el(`<div></div>`); d.appendChild(frag); return d;
+}
+function tile(l,v,cls){ return `<div class="tile ${cls||""}"><div class="lbl">${l}</div><div class="v num">${v}</div></div>`; }
+
+function ecpPanel(name){
+  const rev = currentRev(name);
+  const closed = !rev || rev.status==="Closed";
+  const teams = openTeams(name);
+  const largest = teams.reduce((a,t)=>Math.max(a,+t.wearers||0),0);
+  
+  const emg = emergency();
+  const isEmg = emg && emg.ecp===name;
+  const p = el(`<div class="panel ${closed?"closed":""} ${isEmg?"emg":""}">
+    <header><h3>${esc(name)}</h3><span class="sub">${esc(rev?rev.location||"":"")}${
+      closed?" · closed":""}</span></header>
+    <div class="pbody">
+      <div class="stats">
+        ${tile("Committed", committed(name), committed(name)>0?"blue":"")}
+        ${tile("Standing by", standingBy(name), standingBy(name)>0?"amber":"")}
+      </div>
+      ${teams.length?`<div class="row"><span class="k">Teams in</span><span class="v">${
+        teams.map(t=>`<span class="chip blue">${esc(t.ref)} · ${t.wearers}</span>`).join(" ")}</span></div>`:""}
+      <div class="row"><span class="k">Emergency teams</span><span class="v num">${
+        rev && rev.emSizes && rev.emSizes.length ? rev.emSizes.join(" + ") : "—"}</span>${
+        (()=>{ const em = rev && rev.emSizes ? Math.max(0,...rev.emSizes,0) : 0;
+          if (largest>0 && (!rev || !(rev.emSizes||[]).length))
+            return `<span class="chip red">not recorded</span>`;
+          if (largest>0 && em < largest)
+            return `<span class="chip red">too small — largest team in is ${largest}</span>`;
+          return largest>0 ? `<span class="chip green">ok</span>` : ""; })()}</div>
+      <div class="row"><span class="k">ECPS / ECO</span><span class="v">${
+        esc(rev?[rev.ecpsName,rev.eco].filter(Boolean).join(" / ")||"—":"—")}</span></div>
+      <div class="row"><span class="k">Radio / travel</span><span class="v num">${
+        esc(rev?rev.radio||"—":"—")} · ${rev?rev.travel:0} min${
+        rev && +rev.offset!==0 ? ` · clock ${+rev.offset>0?"+":""}${rev.offset}` : ""}</span></div>
+      ${(committed(name)===0 && standingBy(name)===0 &&
+          !S.events.some(e=>e.type==="Opening position" && e.ecp===name))
+        ? `<div style="margin-top:.5rem"><button class="btn sm" data-open="${esc(name)}">Record opening position</button>
+           <div class="hint" style="margin-top:.25rem">If wearers were already committed here before the BA Sector was established.</div></div>`
+        : ""}
+      ${openRequests(name).map(r=>{
+        const by = dispatchBy(r);
+        return `<div class="pend" ${by!==null?"data-late":""}><div class="hd">
+          <strong>${esc(requestSummary(r))}</strong>
+          ${by!==null
+            ? `<span class="mini">wanted ${hhmm(requiredMaster(r))} · send by ${hhmm(by)}</span>
+               <span class="t" data-count="${by}"></span>`
+            : `<span class="mini">as soon as possible</span>`}
+          <button class="btn sm" data-send="${r.id}">Sent</button></div></div>`;
+      }).join("")}
+    </div></div>`);
+  const ob = p.querySelector("[data-open]");
+  if (ob) ob.onclick = () => { MODAL = () => eventModal("Opening position", {ecp:name}); render(); };
+  p.querySelectorAll("[data-send]").forEach(b => b.onclick = () => {
+    const r = S.events.find(e => e.id === b.dataset.send);
+    if (!r) return;
+    const pre = {ecp:r.ecp, requestId:r.id};
+    KIT.forEach(k => { if (+r[k]>0) pre[k] = r[k]; });
+    MODAL = () => eventModal("Dispatch", pre); render();
+  });
+  return p;
+}
+
+/* ---------- ECPs ---------- */
+function ecpView(){
+  const d = el(`<div></div>`);
+  const bar = el(`<div class="bar"><button class="btn primary" id="add">Open another ECP</button>
+    <span class="mini">Every change is a new dated line. Nothing is overwritten.</span></div>`);
+  bar.querySelector("#add").onclick = () => {
+    const next = ECP_NAMES.find(n => !S.ecps.includes(n));
+    if (!next) return;
+    S.ecps.push(next);
+    const rec = Date.now();
+    S.revs.push({id:uid(), ecp:next, t:stampFrom(rec,hhmm(rec),""), status:"Open", location:"",
+      sector:"", sc:"", ecpsName:"", eco:"", comms:"", radio:"", otherComms:"", offset:0, travel:0,
+      emSizes:[], note:"ECP opened", by:OP()});
+    save(); MODAL = () => revModal(next); render();
+  };
+  d.appendChild(bar);
+  const g = el(`<div class="grid ecpgrid"></div>`);
+  S.ecps.forEach(n => {
+    const rev = currentRev(n);
+    const hist = S.revs.filter(r=>r.ecp===n);
+    const p = el(`<div class="panel ${rev&&rev.status==="Closed"?"closed":""}">
+      <header><h3>${esc(n)}</h3><span class="sub">${hist.length} line${hist.length>1?"s":""}</span></header>
+      <div class="pbody">
+        <div class="row"><span class="k">Status</span><span class="v">${esc(rev.status)}</span></div>
+        <div class="row"><span class="k">Location</span><span class="v">${esc(rev.location||"—")}</span></div>
+        <div class="row"><span class="k">Sector</span><span class="v">${esc(rev.sector||"—")}</span></div>
+        <div class="row"><span class="k">Sector Cdr</span><span class="v">${esc(rev.sc||"—")}</span></div>
+        <div class="row"><span class="k">ECPS</span><span class="v">${esc(rev.ecpsName||"—")}</span></div>
+        <div class="row"><span class="k">ECO</span><span class="v">${esc(rev.eco||"—")}</span></div>
+        <div class="row"><span class="k">Comms Op</span><span class="v">${esc(rev.comms||"—")}</span></div>
+        <div class="row"><span class="k">Radio</span><span class="v num">${esc(rev.radio||"—")}</span></div>
+        <div class="row"><span class="k">Clock offset</span><span class="v num">${
+          +rev.offset===0?"synchronised":(+rev.offset>0?"+":"")+rev.offset+" min"}</span></div>
+        <div class="row"><span class="k">Travel time</span><span class="v num">${rev.travel} min</span></div>
+        <div class="row"><span class="k">Emergency teams</span><span class="v num">${
+          (rev.emSizes&&rev.emSizes.length)?rev.emSizes.join(" + "):"not recorded"}</span></div>
+        <div style="margin-top:.6rem; display:flex; gap:.4rem; flex-wrap:wrap">
+          <button class="btn sm" data-e="${esc(n)}">${hist.length<=1?"Add details":"Change details"}</button>
+          ${(committed(n)===0 && standingBy(n)===0 &&
+             !S.events.some(x=>x.type==="Opening position" && x.ecp===n))
+            ? `<button class="btn sm" data-op="${esc(n)}">Record opening position</button>` : ""}
+        </div>
+      </div></div>`);
+    p.querySelector("[data-e]").onclick = () => { MODAL = () => revModal(n); render(); };
+    const op = p.querySelector("[data-op]");
+    if (op) op.onclick = () => { MODAL = () => eventModal("Opening position", {ecp:n}); render(); };
+    g.appendChild(p);
+  });
+  d.appendChild(g);
+  return d;
+}
+
+function revModal(ecp){
+  const rec = Date.now();
+  const cur = currentRev(ecp);
+  const f = (k,l,t,extra) => `<div class="field"><label for="${k}">${l}</label>
+    <input type="${t||"text"}" id="${k}" value="${esc(cur[k]??"")}" ${extra||""} autocomplete="off"></div>`;
+  const m = el(`<div class="scrim"><div class="modal" role="dialog" aria-modal="true">
+    <header><h2>${esc(ecp)} — ${S.revs.filter(r=>r.ecp===ecp).length<=1?"add":"change"} details</h2><button id="x" aria-label="Close">&times;</button></header>
+    <div class="mbody"><div id="err"></div>
+      ${timeboxHTML("Effective from", hhmm(rec))}
+      <div class="fields">
+        <div class="field"><label for="status">Status</label><select id="status">
+          ${["Open","Closed"].map(o=>`<option ${cur.status===o?"selected":""}>${o}</option>`).join("")}
+        </select></div>
+        ${f("location","Location / description")}
+      </div>
+      <div class="fields">${f("sector","Sector")}
+        <div class="field"></div></div>
+      <div class="fields">${f("sc","Sector Commander")}${f("ecpsName","ECPS")}</div>
+      <div class="fields">${f("eco","ECO")}${f("comms","Comms Operative")}</div>
+      <div class="fields">${f("radio","Radio channel")}${f("otherComms","Other comms")}</div>
+      <div class="fields">
+        ${f("offset","Board clock offset (min)","number",'step="1"')}
+        ${f("travel","Travel time from BA Sector (min)","number",'min="0"')}
+      </div>
+      <div class="field"><label for="emSizes">Emergency BA teams — wearers in each, comma separated</label>
+        <input type="text" id="emSizes" value="${esc((cur.emSizes||[]).join(", "))}" autocomplete="off"
+               placeholder="e.g. 4  or  4, 2">
+        <div class="hint">"4, 2" means two teams: one of four and one of two. Leave blank only if none
+          is in place — the board will flag it while teams are committed.</div></div>
+      <div class="field"><label for="note">Reason for the change</label>
+        <input type="text" id="note" autocomplete="off" placeholder="e.g. crew rotation">
+        <div class="hint">Positive offset means that board reads ahead of the master clock. Record 0
+          when it is synchronised, so a blank never means "assumed fine".</div></div>
+    </div>
+    <div class="mfoot"><button class="btn primary" id="go">Record change</button>
+      <button class="btn" id="cancel">Cancel</button></div></div></div>`);
+  wireTimebox(m, rec);
+  m.querySelector("#x").onclick = m.querySelector("#cancel").onclick = () => { MODAL=null; render(); };
+  m.querySelector("#go").onclick = () => {
+    const {timeStr, note} = readTimebox(m);
+    const g = id => m.querySelector("#"+id).value;
+    const status = g("status");
+    if (status==="Closed" && (committed(ecp)>0 || standingBy(ecp)>0)){
+      showErrs(m,[`${ecp} still shows ${committed(ecp)} committed and ${standingBy(ecp)} standing by. Account for them before closing it.`]);
+      return;
+    }
+    const emRaw = g("emSizes").trim();
+    const emSizes = emRaw ? emRaw.split(/[\s,]+/).map(Number).filter(n=>n>0) : [];
+    if (emRaw && !emSizes.length){ showErrs(m,["Emergency team sizes need to be numbers, e.g. 4, 2."]); return; }
+    S.revs.push({id:uid(), ecp, t:stampFrom(rec,timeStr,note), status,
+      location:g("location"), sector:g("sector"), sc:g("sc"), ecpsName:g("ecpsName"), eco:g("eco"),
+      comms:g("comms"), radio:g("radio"), otherComms:g("otherComms"),
+      offset:+g("offset")||0, travel:+g("travel")||0, emSizes,
+      note:m.querySelector("#note").value.trim(), by:OP()});
+    MODAL=null; save(); render();
+  };
+  return m;
+}
+
+/* ---------- roles & incident details ---------- */
+function sectorModal(){
+  const rec = Date.now();
+  const cur = currentSector() || {number:"",incLoc:"",sectorLoc:"",ic:"",basc:"",loggist:""};
+  const m = el(`<div class="scrim"><div class="modal" role="dialog" aria-modal="true">
+    <header><h2>Roles &amp; incident details</h2><button id="x" aria-label="Close">&times;</button></header>
+    <div class="mbody"><div id="err"></div>
+      ${timeboxHTML("Effective from", hhmm(rec))}
+      <div class="fields">
+        <div class="field"><label for="ic">Incident Commander</label>
+          <input type="text" id="ic" value="${esc(cur.ic)}" autocomplete="off"></div>
+        <div class="field"><label for="no">Incident number</label>
+          <input type="text" id="no" value="${esc(cur.number)}" autocomplete="off"></div>
+      </div>
+      <div class="fields">
+        <div class="field"><label for="incLoc">Incident location</label>
+          <input type="text" id="incLoc" value="${esc(cur.incLoc||"")}" autocomplete="off"></div>
+        <div class="field"><label for="sectorLoc">BA Sector location</label>
+          <input type="text" id="sectorLoc" value="${esc(cur.sectorLoc||"")}" autocomplete="off"></div>
+      </div>
+      <div class="fields">
+        <div class="field"><label for="basc">BA Sector Commander</label>
+          <input type="text" id="basc" value="${esc(cur.basc)}" autocomplete="off">
+          <div class="hint">Change this when the role is handed over.</div></div>
+        <div class="field"><label for="loggist">Loggist — whoever is on the board now</label>
+          <input type="text" id="loggist" value="${esc(cur.loggist)}" autocomplete="off">
+          <div class="hint">From now on, entries are recorded against this name.</div></div>
+      </div>
+      <div class="field"><label for="note">Reason</label>
+        <input type="text" id="note" autocomplete="off" placeholder="e.g. handover to the oncoming watch">
+        <div class="hint">The previous line is kept. Who held each role at any point in the incident
+          stays in the record.</div></div>
+    </div>
+    <div class="mfoot"><button class="btn primary" id="go">Record change</button>
+      <button class="btn" id="cancel">Cancel</button></div></div></div>`);
+  wireTimebox(m, rec);
+  m.querySelector("#x").onclick = m.querySelector("#cancel").onclick = () => { MODAL=null; render(); };
+  m.querySelector("#go").onclick = () => {
+    const g = id => m.querySelector("#"+id).value.trim();
+    const next = { number:g("no"), incLoc:g("incLoc"), sectorLoc:g("sectorLoc"),
+                   ic:g("ic"), basc:g("basc"), loggist:g("loggist") };
+    const bad = [];
+    if (!next.ic) bad.push("Name the Incident Commander.");
+    if (!next.basc) bad.push("Name the BA Sector Commander.");
+    if (!next.loggist) bad.push("Name whoever is on the board now.");
+    const diff = changedFrom(cur, next, SECTOR_FIELDS);
+    if (!diff.length) bad.push("Nothing has changed.");
+    if (bad.length){ showErrs(m, bad); return; }
+    const {timeStr, note} = readTimebox(m);
+    S.sector.push({ id:uid(), t:stampFrom(rec, timeStr, note), ...next,
+                    note:m.querySelector("#note").value.trim(), by:OP() });
+    MODAL=null; save(); render();
+  };
+  return m;
+}
+
+/* ---------- event modal ---------- */
+function eventModal(fixedType, prefill){
+  const rec = Date.now();
+  let type = fixedType || "Commit";
+  const m = el(`<div class="scrim"><div class="modal" role="dialog" aria-modal="true">
+    <header><h2>${fixedType?esc(fixedType):"Log an event"}</h2><button id="x" aria-label="Close">&times;</button></header>
+    <div class="mbody">
+      <div id="err"></div>
+      ${fixedType?"":`<div class="field"><label for="ty">What happened</label>
+        <select id="ty">${EVENT_ORDER.map(t=>`<option ${t===type?"selected":""}>${t}</option>`).join("")}</select></div>`}
+      ${timeboxHTML("Time", hhmm(rec))}
+      <div id="dyn"></div>
+      <div class="field"><label for="note">Notes</label>
+        <input type="text" id="note" autocomplete="off"></div>
+    </div>
+    <div class="mfoot"><button class="btn primary" id="go">Record</button>
+      <button class="btn" id="cancel">Cancel</button>
+      <span class="spacer"></span><span class="mini" id="blurb"></span></div></div></div>`);
+  wireTimebox(m, rec);
+
+  let formVals = {};
+  function readForm(){
+    m.querySelectorAll("#dyn [id]").forEach(n => {
+      if (n.id === "teams") return;
+      formVals[n.id] = n.type==="checkbox" ? n.checked : n.value;
+    });
+    if (m.querySelector("#teams")) formVals.teams = teamRows();
+    return formVals;
+  }
+  function paint(keep){
+    const def = DEFS[type];
+    if (keep) Object.assign(formVals, keep);
+    const vals = formVals;
+    const fields = fieldsFor(type, vals);
+    m.querySelector("#blurb").textContent = def.blurb || "";
+    const dyn = m.querySelector("#dyn");
+    const main = fields.filter(f=>!f.dump), dump = fields.filter(f=>f.dump);
+    dyn.innerHTML = (main.length ? `<div class="fields">${main.map(fieldHTML).join("")}</div>` : "")
+      + (dump.length ? `<details ${dump.some(f=>+vals[f.k]>0)?"open":""} style="margin-top:.4rem">
+           <summary style="cursor:pointer; font-weight:650">${
+             dump.some(f=>f.at) ? "Equipment already at this ECP (with the teams — for information, not sector stock)"
+                                : "Equipment dump"}</summary>
+           <div class="fields" style="margin-top:.5rem">${dump.map(fieldHTML).join("")}</div>
+         </details>` : "");
+    fields.forEach(f => {
+      const n = m.querySelector("#"+f.k);
+      if (n && vals[f.k] !== undefined && vals[f.k] !== "") n.value = vals[f.k];
+    });
+    if (m.querySelector("#teams")){
+      renderTeams(vals.teams);
+      m.querySelector("#addteam").onclick = () => renderTeams([...teamRows(), {ref:"",wearers:""}]);
+    }
+    fields.filter(f => f.repaint).forEach(f => {
+      const n = m.querySelector("#"+f.k);
+      if (n) n.onchange = () => paint(readForm());
+    });
+    if (type==="From R/R"){
+      dyn.insertAdjacentHTML("beforeend",
+        `<div class="field" style="margin-top:.4rem">
+           <label><input type="checkbox" id="releaseEarly" style="width:auto;margin-right:.4rem">
+           Release before the rest period is complete</label>
+           <input type="text" id="earlyNote" placeholder="Why is this group being released early? (worth recording)"
+             style="margin-top:.35rem">
+         </div>`);
+    }
+  }
+  function teamRows(){
+    return [...m.querySelectorAll(".teamrow")].map(r => ({
+      ref: r.querySelector("[data-ref]").value.trim(),
+      wearers: r.querySelector("[data-w]").value
+    }));
+  }
+  function renderTeams(list){
+    const host = m.querySelector("#teams");
+    if (!host) return;
+    const rows = (list && list.length) ? list : [{ref:"",wearers:""}];
+    host.innerHTML = "";
+    rows.forEach(t => host.appendChild(el(
+      `<div class="teamrow" style="display:flex; gap:.5rem; margin-bottom:.4rem">
+         <input type="text" data-ref placeholder="Team reference, e.g. A1" value="${esc(t.ref||"")}" style="flex:1">
+         <input type="number" data-w min="1" step="1" placeholder="Wearers" value="${esc(t.wearers||"")}" style="width:7.5rem">
+         <button class="btn sm" data-rm type="button" title="Remove this team">&minus;</button>
+       </div>`)));
+    host.querySelectorAll("[data-rm]").forEach((b,i) => b.onclick = () => {
+      const l = teamRows(); l.splice(i,1); renderTeams(l);
+    });
+  }
+  function fieldHTML(f){
+    const id = f.k;
+    if (f.type==="teams") return `<div class="field" style="grid-column:1/-1">
+      <label>${f.l}</label><div id="teams"></div>
+      <button class="btn sm" id="addteam" type="button">Add another team</button>
+      <div class="hint">Each team gets a reference so it can be withdrawn by name later. Leave empty
+        if nobody is committed here yet.</div></div>`;
+    if (f.type==="ecp") return sel(id, f.l, activeEcps());
+    if (f.type==="source") return sel(id, f.l, ["External"].concat(activeEcps()), "External");
+    if (f.type==="team"){
+      const t = openTeams();
+      return sel(id, f.l, t.map(x=>`${x.ref} · ${x.ecp} · ${x.wearers}`), null, t.map(x=>x.ref));
+    }
+    if (f.type==="group"){
+      const g = restingGroups();
+      return sel(id, f.l, g.map(x=>`${x.ref} · ${x.wearers} · rested ${hhmm(dueOut(x))}`), null, g.map(x=>x.ref));
+    }
+    if (f.type==="request"){
+      const r = openRequests();
+      return sel(id, f.l, ["None"].concat(r.map(x=>`${x.ecp} · ${x.wearers} by ${hhmm(dispatchBy(x))}`)),
+                 null, [""].concat(r.map(x=>x.id)));
+    }
+    if (f.type==="check") return `<div class="field" style="grid-column:1/-1">
+      <label><input type="checkbox" id="${id}" style="width:auto; margin-right:.4rem">${f.l}</label></div>`;
+    if (f.type==="select") return sel(id, f.l, f.opts);
+    if (f.type==="choose") return sel(id, f.l, ["— choose —"].concat(f.opts),
+                                      null, [""].concat(f.opts), f.hint);
+    const t = f.type==="number" ? "number" : f.type==="time" ? "time" : "text";
+    const extra = f.type==="number" ? (type==="Recondition"||type==="Adjustment" ? 'step="1"' : 'min="0" step="1"') : "";
+    const v0 = f.val !== undefined ? ` value="${esc(f.val)}"` : "";
+    return `<div class="field"><label for="${id}">${f.l}</label>
+      <input type="${t}" id="${id}" ${extra}${v0} autocomplete="off">
+      ${f.hint?`<div class="hint">${f.hint}</div>`:""}</div>`;
+  }
+  function sel(id,l,opts,def,vals,hint){
+    return `<div class="field"><label for="${id}">${l}</label><select id="${id}">
+      ${opts.length?"":`<option value="">— none available —</option>`}
+      ${opts.map((o,i)=>`<option value="${esc(vals?vals[i]:o)}" ${def===o?"selected":""}>${esc(o)}</option>`).join("")}
+    </select>${hint?`<div class="hint">${hint}</div>`:""}</div>`;
+  }
+  paint(prefill || {});
+  if (m.querySelector("#ty")) m.querySelector("#ty").onchange = e => {
+    type = e.target.value; formVals = {}; paint({});
+  };
+  m.querySelector("#x").onclick = m.querySelector("#cancel").onclick = () => { MODAL=null; render(); };
+  m.querySelector("#go").onclick = () => {
+    const {timeStr, note} = readTimebox(m);
+    const st = stampFrom(rec, timeStr, note);
+    const p = { note: m.querySelector("#note").value.trim() };
+    fieldsFor(type, readForm()).forEach(f => {
+      if (f.type==="teams"){ p.teams = teamRows(); return; }
+      const n = m.querySelector("#"+f.k); if (!n) return;
+      p[f.k] = f.type==="number" ? (+n.value||0) : f.type==="check" ? n.checked : n.value;
+    });
+    if (type==="From R/R"){
+      p.releaseEarly = m.querySelector("#releaseEarly").checked;
+      p.earlyNote = m.querySelector("#earlyNote").value.trim();
+    }
+    if (type==="Request" && p.requiredAtStr) p.requiredAt = stampFrom(rec, p.requiredAtStr, "").eff;
+    if (type==="Delivery" && p.ecp==="External") p.ecp = "";
+    if (type==="Opening position" && p.scope==="BA Sector reserves") p.ecp = "";
+    if (type==="Withdraw"){
+      const t = openTeams().find(x=>x.ref===p.ref);
+      if (t){ p.ecp = t.ecp; p.wearers = t.wearers; }
+    }
+    if (type==="From R/R"){
+      const g = restingGroups().find(x=>x.ref===p.ref);
+      if (g) p.wearers = g.wearers;
+    }
+    const {errors} = validate(type, p, st.eff);
+    if (errors.length){ showErrs(m, errors); return; }
+
+    if (type==="Opening position" && p.scope!=="BA Sector reserves"){
+      if (p.correct){
+        S.events.forEach(x => {
+          if (x.ecp===p.ecp && !x.voided &&
+              (x.type==="Opening position" || (x.type==="Commit" && x.fromOpening)))
+            { x.voided = true; x.voidNote = "Superseded by corrected opening position"; }
+        });
+      }
+      const teams = (p.teams||[]).filter(t => t.ref && +t.wearers > 0)
+                                 .map(t => ({ref:t.ref, wearers:+t.wearers}));
+      const preCommitted = teams.reduce((a,t)=>a+t.wearers, 0);
+      const atKit = {}; ["at_tics","at_ease","at_radios","at_ecbs","at_trauma"]
+        .forEach(k => { if (+p[k]>0) atKit[k]=+p[k]; });
+      S.events.push({ id:uid(), seq:++S.seq, type, t:st, by:OP(), ecp:p.ecp,
+                      preCommitted, preStanding:+p.preStanding||0, ...atKit,
+                      correction:!!p.correct, note:p.note });
+      teams.forEach(t => S.events.push({ id:uid(), seq:++S.seq, type:"Commit", t:st, by:OP(),
+        ecp:p.ecp, ref:t.ref, wearers:t.wearers, fromOpening:true,
+        note:"Already committed when the BA Sector was established" }));
+    } else if (type==="Withdraw"){
+      const {rrRef, rrCondition, setsService, cylEmpty, ecbs, tics, ...w} = p;
+      S.events.push({ id:uid(), seq:++S.seq, type, t:st, by:OP(), ...w });
+      if (p.dest===W_RR)
+        S.events.push({ id:uid(), seq:++S.seq, type:"To R/R", t:st, by:OP(),
+          ref:rrRef, wearers:p.wearers, condition:rrCondition,
+          note:`${p.ref} straight to rest from ${p.ecp}` });
+      const kit = {setsService:+setsService||0, cylEmpty:+cylEmpty||0,
+                   ecbs:+ecbs||0, tics:+tics||0};
+      if (p.kitDest===K_BACK && Object.values(kit).some(v=>v>0))
+        S.events.push({ id:uid(), seq:++S.seq, type:"Delivery", t:st, by:OP(),
+          ecp:p.ecp, wearers:0, ...kit, note:`Returned with ${p.ref}` });
+    } else if (type==="Stock check"){
+      const expected = stock();
+      const diffs = {};
+      KIT.forEach(k => { const d = (+p[k]||0) - (expected[k]||0); if (d !== 0) diffs[k] = d; });
+      S.events.push({ id:uid(), seq:++S.seq, type, t:st, by:OP(), note:p.note,
+        counted:Object.fromEntries(KIT.map(k=>[k,+p[k]||0])), diffs });
+      if (Object.keys(diffs).length)
+        S.events.push({ id:uid(), seq:++S.seq, type:"Adjustment", t:st, by:OP(), ...diffs,
+          note:"Stock check found: " + Object.entries(diffs)
+            .map(([k,d]) => `${KIT_LABELS[k]} ${d>0?"+":""}${d}`).join(", ") });
+    } else {
+      delete p.teams;
+      S.events.push({ id:uid(), seq:++S.seq, type, t:st, by:OP(), ...p });
+    }
+    S.events.sort((a,b)=>a.t.eff-b.t.eff || a.seq-b.seq);
+    MODAL=null; TAB="board"; save(); render();
+  };
+  return m;
+}
+
+/* ---------- log ---------- */
+function logView(){
+  const d = el(`<div></div>`);
+  const bar = el(`<div class="bar"><h2>Incident record</h2><span class="spacer"></span>
+    <span class="mini">${S.events.length} events · ${S.revs.length} ECP lines · ${
+      S.sector.length} incident lines</span>
+    <button class="btn sm" id="exp">Export</button>
+    <button class="btn sm" id="new">Start a new incident</button></div>`);
+  bar.querySelector("#exp").onclick = exportFile;
+  bar.querySelector("#new").onclick = () => { MODAL = resetModal; render(); };
+  d.appendChild(bar);
+  const p = el(`<div class="panel"><div class="pbody" id="lines"></div></div>`);
+  const lines = p.querySelector("#lines");
+  const all = [
+    ...S.sector.map((r,i)=>({t:r.t, kind:"sector", o:r, prev:S.sector[i-1]})),
+    ...S.revs.map(r=>({t:r.t, kind:"ecp", o:r})),
+    ...S.events.map(e=>({t:e.t, kind:"ev", o:e}))
+  ].sort((a,b)=>a.t.eff-b.t.eff);
+  if (!all.length) lines.appendChild(el(`<div class="empty">Nothing recorded yet.</div>`));
+  all.forEach(x => {
+    const o = x.o;
+    const diff = x.kind==="sector" ? changedFrom(x.prev, x.o, SECTOR_FIELDS) : [];
+    const body = x.kind==="sector"
+      ? `<strong>${x.prev ? "Roles & details — " + esc(diff.join(", ")) + " changed"
+                          : "BA Sector established"}</strong>
+         ${o.note?` · ${esc(o.note)}`:` · <span class="chip grey">no reason given</span>`}
+         <div class="mini">IC ${esc(o.ic)} · BA Sector Cdr ${esc(o.basc)} · loggist ${esc(o.loggist)}${
+           o.number?` · incident ${esc(o.number)}`:""}${o.sectorLoc?` · sector at ${esc(o.sectorLoc)}`:""}</div>`
+      : x.kind==="ecp"
+      ? `<strong>${esc(o.ecp)}</strong> — ${esc(o.status)}${o.note?` · ${esc(o.note)}`:""}
+         <div class="mini">${esc([o.sc,o.ecpsName,o.eco,o.comms].filter(Boolean).join(" / "))}
+         ${o.radio?` · ch ${esc(o.radio)}`:""} · travel ${o.travel} min · offset ${o.offset} · emergency ${
+           (o.emSizes&&o.emSizes.length)?o.emSizes.join("+"):"none recorded"}</div>`
+      : o.type==="Stock check"
+      ? `<strong>Stock check</strong>${Object.keys(o.diffs||{}).length
+          ? ` · <span class="chip amber">${Object.keys(o.diffs).length} difference${
+              Object.keys(o.diffs).length>1?"s":""}</span>`
+          : ` · <span class="chip green">matches the board</span>`}
+         ${o.note?`<div class="mini">${esc(o.note)}</div>`:""}`
+      : `<strong>${esc(o.type)}</strong>${o.ecp?` · ${esc(o.ecp)}`:""}${o.ref?` · ${esc(o.ref)}`:""}
+         ${o.wearers?` · ${o.wearers} wearers`:""}${o.condition?` · ${esc(o.condition)}`:""}
+         ${o.dest?` · <span class="chip grey">${esc(o.dest)}</span>`:""}${
+           o.kitDest?` · <span class="chip grey">kit: ${esc(o.kitDest)}</span>`:""}
+         ${o.fromOpening?`<span class="chip grey">already in</span>`:""}
+         ${o.correction?`<span class="chip amber">correction</span>`:""}
+         ${o.voided?`<span class="chip grey">${esc(o.voidNote||"superseded")}</span>`:""}
+         ${["at_tics","at_ease","at_radios","at_ecbs","at_trauma"].some(k=>o[k])
+           ? `<div class="mini">at the ECP: ${["at_tics","at_ease","at_radios","at_ecbs","at_trauma"]
+               .filter(k=>o[k]).map(k=>o[k]+" "+KIT_LABELS[k.slice(3)]).join(", ")}</div>` : ""}
+         ${o.note?`<div class="mini">${esc(o.note)}</div>`:""}
+         ${o.releaseEarly?`<div class="mini"><span class="chip red">released early</span> ${
+           esc(o.earlyNote||"no reason given")}</div>`:""}`;
+    lines.appendChild(el(`<div class="logline" ${o.voided?'style="opacity:.45; text-decoration:line-through"':''}>
+      <span class="t">${hhmm(o.t.eff)}</span>
+      <span class="body">${body}</span>
+      <span class="mini">${esc(o.by||"")}</span>
+      ${o.t.adjusted?`<span class="flagt" title="${esc(o.t.note||"no reason given")}">time edited · recorded ${
+        hhmm(o.t.rec)}${o.t.note?"":" · no reason given"}</span>`:""}
+    </div>`));
+  });
+  d.appendChild(p);
+  return d;
+}
+
+/* ---------- closing out an incident ---------- */
+function resetModal(){
+  const cur = currentSector() || {};
+  const n = S.events.length + S.revs.length + S.sector.length;
+  const m = el(`<div class="scrim"><div class="modal" role="dialog" aria-modal="true">
+    <header><h2>Start a new incident</h2><button id="x" aria-label="Close">&times;</button></header>
+    <div class="mbody">
+      <div class="errs"><strong>This clears the current record from this device.</strong>
+        <ul><li>Incident ${esc(cur.number||"—")}, established ${hhmm(S.started.eff)}</li>
+            <li>${n} recorded lines will be removed</li>
+            <li>There is no undo — export first if the record matters</li></ul></div>
+      <p>The incident record only exists in this browser. Once it is cleared it cannot be
+         recovered unless you have exported it.</p>
+      <button class="btn" id="exp">Export the record first</button>
+    </div>
+    <div class="mfoot"><button class="btn danger" id="go">Clear it and start again</button>
+      <button class="btn" id="cancel">Keep the current incident</button></div></div></div>`);
+  m.querySelector("#exp").onclick = exportFile;
+  m.querySelector("#x").onclick = m.querySelector("#cancel").onclick = () => { MODAL=null; render(); };
+  m.querySelector("#go").onclick = async () => {
+    try {
+      if (window.storage){
+        await window.storage.set(KEY, JSON.stringify(blank()));
+        await window.storage.delete(KEY);
+      }
+    } catch(e){}
+    S = blank(); MODAL = null; TAB = "board"; render();
+  };
+  return m;
+}
+
+/* ---------- import / export ---------- */
+function exportFile(){
+  const name = `BA-sector-${(currentSector()||{}).number||"incident"}-${hhmm(Date.now()).replace(":","")}.json`;
+  const json = JSON.stringify(S,null,2);
+  MODAL = () => {
+    const m = el(`<div class="scrim"><div class="modal" role="dialog" aria-modal="true">
+      <header><h2>Export incident record</h2><button id="x" aria-label="Close">&times;</button></header>
+      <div class="mbody">
+        <p>${S.events.length} events · ${S.revs.length} ECP lines · ${S.sector.length} incident lines</p>
+        <div class="bar"><button class="btn primary" id="dl">Download ${esc(name)}</button>
+          <button class="btn" id="cp">Copy to clipboard</button><span class="mini" id="fb"></span></div>
+        <textarea id="raw" rows="10" style="font-family:var(--mono); font-size:.75rem" readonly></textarea>
+        <p class="mini">If the download button does nothing in this environment, copy the text and
+           save it as a .json file. It loads back in through "Load a saved incident".</p>
+      </div>
+      <div class="mfoot"><button class="btn" id="done">Done</button></div></div></div>`);
+    m.querySelector("#raw").value = json;
+    const fb = t => { m.querySelector("#fb").textContent = t; };
+    m.querySelector("#dl").onclick = () => {
+      try {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([json], {type:"application/json"}));
+        a.download = name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+        fb("Download started — check your downloads folder.");
+      } catch(e){ fb("Download blocked here — use copy instead."); }
+    };
+    m.querySelector("#cp").onclick = async () => {
+      const ta = m.querySelector("#raw");
+      try { await navigator.clipboard.writeText(json); fb("Copied."); }
+      catch(e){ ta.focus(); ta.select();
+        try { document.execCommand("copy"); fb("Copied."); }
+        catch(e2){ fb("Select the text and copy it manually."); } }
+    };
+    m.querySelector("#x").onclick = m.querySelector("#done").onclick = () => { MODAL=null; render(); };
+    return m;
+  };
+  render();
+}
+function importFile(){
+  const i = document.createElement("input");
+  i.type = "file"; i.accept = "application/json";
+  i.onchange = () => {
+    const f = i.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { try { S = JSON.parse(r.result); save(); render(); }
+                       catch(e){ alert("That file could not be read as an incident record."); } };
+    r.readAsText(f);
+  };
+  i.click();
+}
+
+/* ---------- go ---------- */
+function migrate(r){
+  if (r && r.revs) r.revs.forEach(v => {
+    if (v.emSizes === undefined){
+      v.emSizes = (+v.emTeams>0 && +v.emSize>0) ? Array(+v.emTeams).fill(+v.emSize) : [];
+      delete v.emTeams; delete v.emSize;
+    }
+    if (v.sector === undefined) v.sector = "";
+  });
+  if (r && r.sector) r.sector.forEach(v => {
+    if (v.incLoc === undefined) v.incLoc = "";
+    if (v.sectorLoc === undefined) v.sectorLoc = "";
+  });
+  if (r && r.started && !r.sector){
+    r.sector = [{ id:uid(), t:{...r.started}, number:(r.incident||{}).number||"",
+                  ic:(r.incident||{}).ic||"", basc:r.operator||"", loggist:r.operator||"",
+                  note:"BA Sector established", by:r.operator||"" }];
+    delete r.incident; delete r.operator;
+  }
+  return r;
+}
+(async () => { const r = migrate(await restore()); if (r && r.started) S = r; render(); })();
+</script>
