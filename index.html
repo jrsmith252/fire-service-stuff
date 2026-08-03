@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fire Service Projects</title>
+<meta name="description" content="Browser-based tools for UK fire and rescue services: incident command e-learning and BA sector resource management.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="board.css">
+</head>
+<body>
+
+<div class="board">
+  <div class="board-inner">
+
+    <div class="motto">Smart Work Will Reduce Duplication</div>
+
+    <div class="board-head">
+      <div class="clock-wrap">
+        <!-- Live analogue clock -->
+        <svg class="clock" viewBox="0 0 100 100" role="img" aria-label="Current time">
+          <circle cx="50" cy="50" r="48" fill="#FFFFFF" stroke="#26282B" stroke-width="3"/>
+          <g stroke="#26282B" stroke-width="2">
+            <line x1="50" y1="6" x2="50" y2="13"/>
+            <line x1="50" y1="87" x2="50" y2="94"/>
+            <line x1="6" y1="50" x2="13" y2="50"/>
+            <line x1="87" y1="50" x2="94" y2="50"/>
+          </g>
+          <g stroke="#26282B" stroke-width="1">
+            <line x1="72" y1="11.9" x2="68.5" y2="17.9"/>
+            <line x1="88.1" y1="28" x2="82.1" y2="31.5"/>
+            <line x1="88.1" y1="72" x2="82.1" y2="68.5"/>
+            <line x1="72" y1="88.1" x2="68.5" y2="82.1"/>
+            <line x1="28" y1="88.1" x2="31.5" y2="82.1"/>
+            <line x1="11.9" y1="72" x2="17.9" y2="68.5"/>
+            <line x1="11.9" y1="28" x2="17.9" y2="31.5"/>
+            <line x1="28" y1="11.9" x2="31.5" y2="17.9"/>
+          </g>
+          <line id="hourHand"   x1="50" y1="50" x2="50" y2="28" stroke="#26282B" stroke-width="4" stroke-linecap="round"/>
+          <line id="minuteHand" x1="50" y1="50" x2="50" y2="16" stroke="#26282B" stroke-width="2.5" stroke-linecap="round"/>
+          <line id="secondHand" x1="50" y1="54" x2="50" y2="14" stroke="#D42B1E" stroke-width="1.2" stroke-linecap="round"/>
+          <circle cx="50" cy="50" r="2.5" fill="#26282B"/>
+        </svg>
+        <div class="board-title">
+          <!-- EDIT: change the site title here -->
+          <h1>Fire Service<br>Projects</h1>
+          <div class="stage">Project Control Board &middot; Stage I</div>
+        </div>
+      </div>
+
+      <div class="info-table">
+        <div class="it-head">Working Notes</div>
+        <ul>
+          <li>Browser-based</li>
+          <li>No installation</li>
+          <li>Works offline once loaded</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="board-body">
+      <div class="tallies">
+        <div class="col-label">Tallies &mdash; Projects in Use</div>
+
+        <!-- ============ PROJECT: BA Sector board ============ -->
+        <!-- EDIT: if your BA Sector file has a different name, change the href -->
+        <a class="tally" href="ba-sector.html">
+          <div class="tally-row">
+            <span class="field-label">Project Name</span>
+            <span class="type">Operations</span>
+          </div>
+          <h2>BA Sector Resource Management</h2>
+          <p class="desc">A digital BA sector board. Tracks entry control points, committed teams, standing-by wearers and R&amp;R on one timeline, with an append-only log of every decision.</p>
+          <span class="open-cue">Open the board</span>
+        </a>
+
+        <!-- ============ E-LEARNING: opens its own board ============ -->
+        <a class="tally" href="elearning.html">
+          <div class="tally-row">
+            <span class="field-label">Project Name</span>
+            <span class="type">Training</span>
+          </div>
+          <h2>Incident Command Development: E-Learning</h2>
+          <p class="desc">Interactive, scenario-based training modules for developing incident commanders. Opens a board of the available modules.</p>
+          <span class="open-cue">Open the modules board</span>
+        </a>
+
+        <!-- ============ ADD A NEW PROJECT ============
+             Copy one of the <a class="tally"> blocks above, then change:
+             - href       : the filename of the new app (or board page)
+             - .type      : Operations / Training / etc.
+             - <h2>       : the project name
+             - .desc      : one or two sentences on what it does
+             - .open-cue  : the action label
+        ============================================== -->
+      </div>
+
+      <div class="remarks">
+        <div class="col-label">Remarks</div>
+        <div class="remarks-lines">
+          <p class="remarks-note">Shared freely for use within fire &amp; rescue services. Use the links rather than saved copies &mdash; that way you always have the latest version. Feedback very welcome.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="board-foot">
+      <!-- EDIT: put your name / contact details here -->
+      <span>Built by a serving UK firefighter.</span>
+      <span>Entry control board pattern used with respect.</span>
+    </div>
+
+  </div>
+</div>
+
+<script src="clock.js"></script>
+
+</body>
+</html>
