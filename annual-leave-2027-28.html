@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Annual Leave 2027/28 — Blue Watch</title>
+<style>
+  :root{
+    --backdrop:#caccd1;
+    --navy:#16264c;
+    --navy-2:#1f3462;
+    --board:#f7f6f2;
+    --line:#d8d5cc;
+    --tally:#f2c230;
+    --tally-edge:#c79a15;
+    --ink:#20242c;
+    --muted:#6a7080;
+    --ok:#2e7d4f;
+    --full:#b97a0a;
+    --clash:#b1332b;
+    --clash-bg:#f6dedc;
+    --full-bg:#faeed3;
+    --radius:6px;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--backdrop);
+    color:var(--ink);
+    font-family:"Helvetica Neue",Arial,system-ui,sans-serif;
+    padding:14px;
+  }
+  .frame{
+    max-width:1060px;margin:0 auto;
+    background:var(--board);
+    border:6px solid var(--navy);
+    border-radius:10px;
+    box-shadow:0 6px 24px rgba(22,38,76,.25);
+    overflow:hidden;
+  }
+  header{
+    background:var(--navy);color:#fff;
+    padding:16px 20px 14px;
+    display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;
+  }
+  header h1{
+    font-size:1.15rem;font-weight:700;
+    text-transform:uppercase;letter-spacing:.14em;
+  }
+  header .sub{color:#c8d2e8;font-size:.85rem;letter-spacing:.04em;}
+  nav.modes{display:flex;background:var(--navy-2);}
+  nav.modes button{
+    flex:1;padding:11px 8px;border:0;cursor:pointer;
+    background:transparent;color:#c8d2e8;
+    font:inherit;font-size:.85rem;font-weight:700;
+    text-transform:uppercase;letter-spacing:.1em;
+  }
+  nav.modes button[aria-selected="true"]{
+    background:var(--board);color:var(--navy);
+    border-radius:8px 8px 0 0;
+  }
+  main{padding:18px;}
+  .hidden{display:none !important;}
+
+  /* ---------- shared bits ---------- */
+  .panel{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px;margin-bottom:14px;
+  }
+  .panel h2{
+    font-size:.8rem;text-transform:uppercase;letter-spacing:.12em;
+    color:var(--navy);margin-bottom:10px;
+  }
+  label{font-size:.8rem;font-weight:700;color:var(--muted);display:block;margin-bottom:4px;}
+  input[type=text],select,textarea{
+    font:inherit;padding:8px 10px;border:1px solid #b9bcc4;border-radius:4px;
+    width:100%;background:#fff;color:var(--ink);
+  }
+  textarea{min-height:110px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;}
+  .row{display:flex;gap:12px;flex-wrap:wrap;}
+  .row>div{flex:1;min-width:180px;}
+  button.action{
+    font:inherit;font-weight:700;font-size:.85rem;
+    padding:9px 16px;border-radius:4px;cursor:pointer;
+    border:2px solid var(--navy);background:var(--navy);color:#fff;
+    letter-spacing:.04em;
+  }
+  button.action.quiet{background:#fff;color:var(--navy);}
+  button.action:active{transform:translateY(1px);}
+  .note{font-size:.8rem;color:var(--muted);line-height:1.45;}
+  .warn{color:var(--clash);font-weight:700;}
+
+  /* ---------- summary strip ---------- */
+  .summary{
+    position:sticky;top:0;z-index:5;
+    display:flex;gap:10px;flex-wrap:wrap;
+    background:var(--navy);border-radius:var(--radius);
+    padding:10px 12px;margin-bottom:14px;
+    box-shadow:0 3px 10px rgba(22,38,76,.3);
+  }
+  .stat{
+    background:var(--tally);
+    border-left:6px solid var(--tally-edge);
+    border-radius:3px;
+    padding:6px 12px 5px;min-width:118px;
+    color:#3a2f04;
+  }
+  .stat .v{font-size:1.25rem;font-weight:800;line-height:1.1;}
+  .stat .k{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;}
+  .stat.over{background:var(--clash);border-left-color:#7c211b;color:#fff;}
+  .stat.done{background:var(--ok);border-left-color:#1d5637;color:#fff;}
+
+  /* ---------- picker board ---------- */
+  .month{margin-bottom:18px;}
+  .month>h3{
+    font-size:.85rem;text-transform:uppercase;letter-spacing:.16em;
+    color:var(--navy);border-bottom:2px solid var(--navy);
+    padding-bottom:4px;margin-bottom:10px;
+  }
+  .set{
+    display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+    padding:8px 10px;margin-bottom:8px;
+  }
+  .set .id{
+    display:flex;flex-direction:column;justify-content:center;
+    min-width:86px;
+  }
+  .set .id b{font-size:.8rem;color:var(--navy);letter-spacing:.06em;}
+  .set .id span{font-size:.72rem;color:var(--muted);}
+  .set .chips{display:flex;gap:6px;flex-wrap:wrap;flex:1;}
+  .chip{
+    font:inherit;
+    border:1px solid #b9bcc4;border-radius:3px;background:#fdfdfb;
+    padding:6px 8px;min-width:86px;text-align:left;
+  }
+  .chip .d{font-size:.78rem;font-weight:700;}
+  .chip .t{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+  .chip.sel{
+    background:var(--tally);border-color:var(--tally-edge);
+    border-left-width:5px;color:#3a2f04;
+  }
+  .chip.sel .t{color:#6d5407;}
+  .setbtn{
+    align-self:center;
+    font:inherit;font-size:.7rem;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;cursor:pointer;
+    border:1px solid var(--navy);border-radius:3px;
+    background:#fff;color:var(--navy);padding:7px 9px;
+  }
+  .setbtn.on{background:var(--navy);color:#fff;}
+  .setbtn:disabled{opacity:.35;cursor:not-allowed;}
+  .bh{
+    display:inline-block;background:var(--clash);color:#fff;
+    font-size:.58rem;font-weight:800;letter-spacing:.05em;
+    border-radius:2px;padding:1px 4px;vertical-align:1px;
+  }
+  .partial-note{flex-basis:100%;font-size:.72rem;color:var(--muted);font-style:italic;}
+
+  /* ---------- collation ---------- */
+  table{border-collapse:collapse;width:100%;font-size:.82rem;}
+  th,td{border:1px solid var(--line);padding:5px 8px;text-align:left;}
+  th{background:var(--navy);color:#fff;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  tr.overbook td{background:var(--clash-bg);}
+  .cell{
+    flex:1;min-width:96px;border:1px solid var(--line);border-radius:3px;
+    padding:5px 7px;background:#fdfdfb;
+  }
+  .cell .d{font-size:.72rem;font-weight:700;}
+  .cell .t{font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+  .cell .who{margin-top:3px;display:flex;gap:3px;flex-wrap:wrap;}
+  .cell .p{
+    background:var(--tally);border:1px solid var(--tally-edge);border-radius:2px;
+    font-size:.66rem;font-weight:800;padding:1px 4px;color:#3a2f04;
+  }
+  .cell.full{background:var(--full-bg);border-color:var(--full);}
+  .cell.clash{background:var(--clash-bg);border-color:var(--clash);}
+  .cell.clash .d{color:var(--clash);}
+  .cell .count{float:right;font-size:.66rem;font-weight:800;color:var(--muted);}
+  .cell.full .count{color:var(--full);}
+  .cell.clash .count{color:var(--clash);}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:8px 0 2px;}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:4px;border:1px solid var(--line);}
+  .clashlist li{margin-left:18px;font-size:.82rem;padding:2px 0;}
+
+  /* code output */
+  .codebox{
+    background:var(--navy);color:#ffe9a8;border-radius:4px;
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;
+    padding:10px 12px;word-break:break-all;margin:8px 0;
+    user-select:all;
+  }
+  .copied{color:var(--ok);font-weight:700;font-size:.8rem;}
+
+  @media print{
+    body{background:#fff;padding:0;}
+    .frame{border-width:2px;box-shadow:none;}
+    nav.modes,.summary,.panel.inputs,button,.setbtn{display:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+  <header>
+    <h1>Annual Leave 2027/28</h1>
+    <span class="sub">Blue Watch · First set Mon 5 April 2027 · 2-2-4</span>
+  </header>
+
+  <nav class="modes" role="tablist">
+    <button id="tab-pick" role="tab" aria-selected="true" onclick="setMode('pick')">Make my request</button>
+    <button id="tab-collate" role="tab" aria-selected="false" onclick="setMode('collate')">Collate requests</button>
+  </nav>
+
+  <main>
+    <!-- ========== PICKER ========== -->
+    <section id="pick">
+      <div class="panel inputs">
+        <div class="row">
+          <div>
+            <label for="name">Your name</label>
+            <input type="text" id="name" placeholder="e.g. J Smith" oninput="render()">
+          </div>
+        </div>
+        <p class="note" style="margin-top:10px">
+          This round is <b>full sets only — pick 8</b>. Tap a set to select it, tap again to clear it.
+          Your remaining days are plotted later, once any clashes are resolved on the watch.
+        </p>
+      </div>
+
+      <div class="summary" id="summary"></div>
+      <div id="board"></div>
+
+      <div class="panel">
+        <h2>Send your request</h2>
+        <p class="note">This creates a short code. Copy it and send it to the person collating
+          (WhatsApp or email). Keep a copy — pasting it back in above restores your selections.</p>
+        <div style="margin-top:8px">
+          <button class="action" onclick="makeCode()">Create my code</button>
+          <span class="copied" id="copyMsg"></span>
+        </div>
+        <div class="codebox hidden" id="codeOut"></div>
+      </div>
+    </section>
+
+    <!-- ========== COLLATION ========== -->
+    <section id="collate" class="hidden">
+      <div class="panel inputs">
+        <h2>Paste request codes</h2>
+        <p class="note">One code per line. Loading a second code with the same name replaces the first,
+          so people can resubmit after clashes are resolved.</p>
+        <textarea id="codes" placeholder="AL2728|J Smith|0-3,8-11,…&#10;AL2728|E Wragg|4-7,…"></textarea>
+        <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="action" onclick="collate()">Load requests</button>
+          <button class="action quiet" onclick="window.print()">Print board</button>
+        </div>
+        <p class="note warn" id="collateErr"></p>
+      </div>
+      <div id="people"></div>
+      <div id="clashes"></div>
+      <div id="cboard"></div>
+    </section>
+  </main>
+
+</div>
+
+<script>
+"use strict";
+/* ---------- shift calendar: 2-2-4 from Mon 5 Apr 2027, clipped 31 Mar 2028 ---------- */
+const DAY = 86400000;
+const ANCHOR = Date.UTC(2027, 3, 5);
+const YEAR_END = Date.UTC(2028, 2, 31);
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTH_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+const SETS = [];   // {n, shifts:[shiftId…], start:Date, partial}
+const SHIFTS = []; // {id, set, date:Date, type:'Day'|'Night'}
+(function build(){
+  for (let s = 0; ; s++) {
+    const start = ANCHOR + s * 8 * DAY;
+    if (start > YEAR_END) break;
+    const set = { n: s + 1, shifts: [], start: new Date(start), partial: false };
+    for (let k = 0; k < 4; k++) {
+      const t = start + k * DAY;
+      if (t > YEAR_END) { set.partial = true; continue; }
+      const id = SHIFTS.length;
+      SHIFTS.push({ id, set: s, date: new Date(t), type: k < 2 ? "Day" : "Night" });
+      set.shifts.push(id);
+    }
+    SETS.push(set);
+  }
+})();
+
+/* Public holidays as they count for the watch, 1 Apr 2027 – 31 Mar 2028.
+   Christmas Day & Boxing Day: day and night shifts. New Year's Eve: night only.
+   New Year's Day: day only. Substitute bank holidays (27/28 Dec, 3 Jan) do NOT count.
+   All other bank holidays count for day and night shifts.
+   (No Easter holidays fall in this leave year: Easter 2027 is late March, Easter 2028 mid-April.) */
+const BANK_HOLS = {
+  "2027-05-03": { name: "Early May bank holiday", D: 1, N: 1 },
+  "2027-05-31": { name: "Spring bank holiday",    D: 1, N: 1 },
+  "2027-08-30": { name: "Summer bank holiday",    D: 1, N: 1 },
+  "2027-12-25": { name: "Christmas Day",          D: 1, N: 1 },
+  "2027-12-26": { name: "Boxing Day",             D: 1, N: 1 },
+  "2027-12-31": { name: "New Year's Eve",         D: 0, N: 1 },
+  "2028-01-01": { name: "New Year's Day",         D: 1, N: 0 }
+};
+function iso(d){ return d.toISOString().slice(0, 10); }
+function bhBadge(d, type){
+  const h = BANK_HOLS[iso(d)];
+  if (!h) return "";
+  const applies = type === "Day" ? h.D : h.N;
+  return applies ? ' <span class="bh" title="' + h.name + '">BH</span>' : "";
+}
+
+function fmt(d){ return DOW[d.getUTCDay()] + " " + d.getUTCDate() + " " + MON[d.getUTCMonth()]; }
+function fmtShort(d){ return d.getUTCDate() + " " + MON[d.getUTCMonth()]; }
+
+/* ---------- state ---------- */
+const sel = new Set();
+let mode = "pick";
+
+function setMode(m){
+  mode = m;
+  document.getElementById("pick").classList.toggle("hidden", m !== "pick");
+  document.getElementById("collate").classList.toggle("hidden", m !== "collate");
+  document.getElementById("tab-pick").setAttribute("aria-selected", m === "pick");
+  document.getElementById("tab-collate").setAttribute("aria-selected", m === "collate");
+}
+
+function toggleSet(si){
+  const s = SETS[si];
+  const all = s.shifts.every(id => sel.has(id));
+  if (!all && fullSetCount() >= 8) return; // cap reached — deselect a set first
+  s.shifts.forEach(id => all ? sel.delete(id) : sel.add(id));
+  render();
+}
+
+function fullSetCount(){
+  return SETS.filter(s => !s.partial && s.shifts.length === 4 && s.shifts.every(id => sel.has(id))).length;
+}
+
+/* ---------- picker render ---------- */
+function render(){
+  const total = sel.size;
+  const fullSets = fullSetCount();
+
+  const sm = document.getElementById("summary");
+  sm.innerHTML =
+    stat(fullSets + " / 8", "Sets selected", fullSets === 8 ? "done" : "") +
+    stat(total, "Shifts (days used)", "");
+  const capped = fullSets >= 8;
+
+  const board = document.getElementById("board");
+  let html = "", curMonth = -1;
+  for (const s of SETS) {
+    const mKey = s.start.getUTCFullYear() * 12 + s.start.getUTCMonth();
+    if (mKey !== curMonth) {
+      if (curMonth !== -1) html += "</div>";
+      curMonth = mKey;
+      html += '<div class="month"><h3>' + MONTH_FULL[s.start.getUTCMonth()] + " " + s.start.getUTCFullYear() + "</h3>";
+    }
+    const allSel = s.shifts.every(id => sel.has(id));
+    html += '<div class="set"><div class="id"><b>SET ' + s.n + '</b><span>' +
+      fmtShort(s.start) + " – " + fmtShort(new Date(s.start.getTime() + 3 * DAY)) + "</span></div>" +
+      '<div class="chips">' +
+      s.shifts.map(id => {
+        const sh = SHIFTS[id];
+        return '<div class="chip' + (sel.has(id) ? " sel" : "") + '">' +
+          '<div class="d">' + fmt(sh.date) + bhBadge(sh.date, sh.type) + '</div><div class="t">' + sh.type + "</div></div>";
+      }).join("") +
+      "</div>" +
+      (s.partial
+        ? '<div class="partial-note">Only the day shifts of this set fall in 2027/28 (its nights are 1–2 Apr 2028). It can\'t be one of your 8 full sets — these two days are plotted with your additional days later.</div>'
+        : '<button type="button" class="setbtn' + (allSel ? " on" : "") + '"' +
+          (!allSel && capped ? " disabled" : "") + ' onclick="toggleSet(' + (s.n - 1) + ')">' +
+          (allSel ? "Clear set" : "Select set") + "</button>") +
+      "</div>";
+  }
+  html += "</div>";
+  board.innerHTML = html;
+}
+function stat(v, k, cls){
+  return '<div class="stat ' + cls + '"><div class="v">' + v + '</div><div class="k">' + k + "</div></div>";
+}
+
+/* ---------- code encode / decode ---------- */
+function encodeRanges(ids){
+  const a = [...ids].sort((x, y) => x - y);
+  const out = [];
+  for (let i = 0; i < a.length;) {
+    let j = i;
+    while (j + 1 < a.length && a[j + 1] === a[j] + 1) j++;
+    out.push(i === j ? String(a[i]) : a[i] + "-" + a[j]);
+    i = j + 1;
+  }
+  return out.join(",");
+}
+function decodeRanges(str){
+  const ids = new Set();
+  if (!str.trim()) return ids;
+  for (const part of str.split(",")) {
+    const m = part.trim().match(/^(\d+)(?:-(\d+))?$/);
+    if (!m) throw new Error("bad range: " + part);
+    const a = +m[1], b = m[2] ? +m[2] : a;
+    for (let i = a; i <= b; i++) {
+      if (i < 0 || i >= SHIFTS.length) throw new Error("shift out of range: " + i);
+      ids.add(i);
+    }
+  }
+  return ids;
+}
+
+function makeCode(){
+  const name = document.getElementById("name").value.trim();
+  const msg = document.getElementById("copyMsg");
+  if (!name) { msg.textContent = "Add your name first."; msg.className = "note warn"; return; }
+  const code = "AL2728|" + name.replace(/\|/g, "/") + "|" + encodeRanges(sel);
+  const box = document.getElementById("codeOut");
+  box.textContent = code;
+  box.classList.remove("hidden");
+  msg.className = "copied";
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(
+      () => { msg.textContent = "Copied to clipboard — send it on."; },
+      () => { msg.textContent = "Long-press the code to copy it."; }
+    );
+  } else {
+    msg.textContent = "Long-press the code to copy it.";
+  }
+}
+
+function parseCode(line){
+  const p = line.trim().split("|");
+  if (p.length !== 3 || p[0] !== "AL2728") throw new Error("not a 2027/28 code");
+  const name = p[1].trim();
+  if (!name) throw new Error("missing name");
+  return { name, ids: decodeRanges(p[2]) };
+}
+
+/* ---------- collation ---------- */
+function makeTags(names){
+  const baseOf = n => n.trim().split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 3);
+  const groups = new Map();
+  for (const n of names) {
+    const b = baseOf(n);
+    if (!groups.has(b)) groups.set(b, []);
+    groups.get(b).push(n);
+  }
+  const tags = new Map(), taken = new Set();
+  const claim = (name, cand) => {
+    let t = cand, i = 2;
+    while (taken.has(t)) t = cand + i++;
+    taken.add(t); tags.set(name, t);
+  };
+  for (const [b, group] of groups) {
+    if (group.length === 1) { claim(group[0], b); continue; }
+    // clash on plain initials — extend everyone with surname letters until distinct (JSm / JSt)
+    for (const name of group) {
+      const words = name.trim().split(/\s+/);
+      const last = words[words.length - 1];
+      let cand = b, k = 2;
+      if (words.length > 1) {
+        while (k <= last.length) {
+          cand = words[0][0].toUpperCase() + last[0].toUpperCase() + last.slice(1, k).toLowerCase();
+          if (!taken.has(cand)) break;
+          k++;
+        }
+      }
+      claim(name, cand);
+    }
+  }
+  return tags;
+}
+
+function collate(){
+  const err = document.getElementById("collateErr");
+  err.textContent = "";
+  const lines = document.getElementById("codes").value.split("\n").map(l => l.trim()).filter(Boolean);
+  const people = new Map(); // name -> {ids}
+  const bad = [];
+  for (const line of lines) {
+    try {
+      const r = parseCode(line);
+      people.set(r.name, r); // same name replaces earlier submission
+    } catch (e) { bad.push(line.slice(0, 30) + "…"); }
+  }
+  if (bad.length) err.textContent = "Skipped " + bad.length + " line(s) that didn't parse: " + bad.join("  ");
+  if (!people.size) {
+    document.getElementById("people").innerHTML = "";
+    document.getElementById("clashes").innerHTML = "";
+    document.getElementById("cboard").innerHTML = "";
+    if (!bad.length) err.textContent = "No codes to load yet.";
+    return;
+  }
+
+  const tag = makeTags([...people.keys()]);
+
+  /* people table */
+  let pt = '<div class="panel"><h2>Requests loaded (' + people.size + ")</h2><table><tr>" +
+    "<th>Name</th><th>Tag</th><th>Full sets</th><th>Shifts</th></tr>";
+  for (const [name, r] of people) {
+    const full = SETS.filter(s => !s.partial && s.shifts.every(id => r.ids.has(id))).length;
+    pt += "<tr" + (full > 8 ? ' class="overbook"' : "") + "><td>" + esc(name) + "</td><td>" + tag.get(name) +
+      '</td><td class="num">' + full + '</td><td class="num">' + r.ids.size + "</td></tr>";
+  }
+  pt += "</table></div>";
+  document.getElementById("people").innerHTML = pt;
+
+  /* per-shift counts */
+  const byShift = SHIFTS.map(() => []);
+  for (const [name, r] of people) r.ids.forEach(id => byShift[id].push(name));
+
+  /* clash summary */
+  const clashes = SHIFTS.filter(sh => byShift[sh.id].length > 3);
+  let cs = '<div class="panel"><h2>Clashes — more than 3 off</h2>';
+  if (clashes.length) {
+    cs += "<ul class='clashlist'>" + clashes.map(sh =>
+      "<li><b>" + fmt(sh.date) + " (" + sh.type + ")</b> — " +
+      byShift[sh.id].length + " requested: " + byShift[sh.id].map(esc).join(", ") + "</li>").join("") + "</ul>";
+  } else {
+    cs += '<p class="note">None. Every shift has 3 or fewer requests.</p>';
+  }
+  cs += "</div>";
+  document.getElementById("clashes").innerHTML = cs;
+
+  /* board */
+  let html = '<div class="legend"><span><i style="background:#fdfdfb"></i>Space available</span>' +
+    '<span><i style="background:var(--full-bg);border-color:var(--full)"></i>At limit (3)</span>' +
+    '<span><i style="background:var(--clash-bg);border-color:var(--clash)"></i>Clash (&gt;3)</span>' +
+    '<span><span class="bh">BH</span> Public holiday shift</span></div>';
+  let curMonth = -1;
+  for (const s of SETS) {
+    const mKey = s.start.getUTCFullYear() * 12 + s.start.getUTCMonth();
+    if (mKey !== curMonth) {
+      if (curMonth !== -1) html += "</div>";
+      curMonth = mKey;
+      html += '<div class="month"><h3>' + MONTH_FULL[s.start.getUTCMonth()] + " " + s.start.getUTCFullYear() + "</h3>";
+    }
+    html += '<div class="set"><div class="id"><b>SET ' + s.n + "</b><span>" +
+      fmtShort(s.start) + " – " + fmtShort(new Date(s.start.getTime() + 3 * DAY)) + "</span></div>" +
+      '<div class="chips">' +
+      s.shifts.map(id => {
+        const sh = SHIFTS[id], who = byShift[id];
+        const cls = who.length > 3 ? "clash" : who.length === 3 ? "full" : "";
+        return '<div class="cell ' + cls + '" title="' + who.map(esc).join(", ") + '">' +
+          '<span class="count">' + who.length + '/3</span>' +
+          '<div class="d">' + fmt(sh.date) + bhBadge(sh.date, sh.type) + '</div><div class="t">' + sh.type + '</div>' +
+          '<div class="who">' + who.map(n => '<span class="p">' + tag.get(n) + "</span>").join("") + "</div></div>";
+      }).join("") +
+      "</div></div>";
+  }
+  html += "</div>";
+  document.getElementById("cboard").innerHTML = html;
+}
+
+function esc(s){ return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;"); }
+
+render();
+</script>
+</body>
+</html>
