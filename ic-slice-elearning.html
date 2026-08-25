@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Structure Fire Size-Up: SLICE and BE-SAHF — Incident Command Development</title>
+<style>
+  :root{
+    --navy:#003366;
+    --navy-deep:#001f3f;
+    --ink:#1c2430;
+    --muted:#5b6673;
+    --line:#d7dde4;
+    --paper:#ffffff;
+    --backdrop:#eef1f4;
+    --amber:#e08a00;
+    --amber-soft:#fff4df;
+    --red:#b3261e;
+    --red-soft:#fbe9e7;
+    --green:#1b7a3d;
+    --green-soft:#e6f4ea;
+    --smoke:#6b6f75;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;background:var(--backdrop);color:var(--ink);line-height:1.55}
+  header{background:var(--navy);color:#fff;padding:22px 20px 16px}
+  header .wrap{max-width:1000px;margin:0 auto}
+  header h1{margin:0;font-size:1.45rem;font-weight:600;letter-spacing:.2px}
+  header .sub{opacity:.85;font-size:.92rem;margin-top:4px}
+  .progress{height:6px;background:rgba(255,255,255,.2);border-radius:3px;margin-top:14px;overflow:hidden}
+  .progress > div{height:100%;background:#ffcc33;width:0;transition:width .3s}
+  nav{background:var(--navy-deep);position:sticky;top:0;z-index:10}
+  nav .wrap{max-width:1000px;margin:0 auto;display:flex;overflow-x:auto;scrollbar-width:thin}
+  nav button{background:none;border:0;color:rgba(255,255,255,.75);padding:12px 14px;font-size:.88rem;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent}
+  nav button:hover{color:#fff}
+  nav button.active{color:#fff;border-bottom-color:#ffcc33;font-weight:600}
+  nav button:focus-visible{outline:2px solid #ffcc33;outline-offset:-2px}
+  main{max-width:1000px;margin:0 auto;padding:24px 20px 60px}
+  section.phase{display:none}
+  section.phase.active{display:block}
+  h2{color:var(--navy);font-size:1.35rem;margin:0 0 6px}
+  h3{color:var(--navy);font-size:1.08rem;margin:26px 0 8px}
+  h4{margin:14px 0 6px;font-size:.98rem}
+  p{margin:0 0 12px}
+  .lede{font-size:1.05rem;color:var(--muted);margin-bottom:20px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:14px 0}
+  .card.navy{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .card.navy h3,.card.navy h4{color:#fff}
+  .callout{border-left:5px solid var(--amber);background:var(--amber-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+  .callout.red{border-color:var(--red);background:var(--red-soft)}
+  .callout.green{border-color:var(--green);background:var(--green-soft)}
+  .callout.navy{border-color:var(--navy);background:#e8eef5}
+  .eyebrow{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px}
+  ul{margin:6px 0 12px 20px;padding:0}
+  li{margin:4px 0}
+  .btn{display:inline-block;background:var(--navy);color:#fff;border:0;border-radius:6px;padding:10px 18px;font-size:.95rem;cursor:pointer;margin:6px 6px 6px 0}
+  .btn:hover{background:#00458a}
+  .btn.ghost{background:#fff;color:var(--navy);border:2px solid var(--navy)}
+  .btn.ghost:hover{background:#e8eef5}
+  .btn:focus-visible{outline:3px solid #ffcc33;outline-offset:2px}
+  .reveal-body{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+  .reveal-body.open{display:block}
+  .nextbar{display:flex;justify-content:space-between;align-items:center;margin-top:30px;padding-top:16px;border-top:1px solid var(--line)}
+  .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.78rem;font-weight:600;background:#e8eef5;color:var(--navy);margin-right:6px}
+  .pill.amber{background:var(--amber-soft);color:#8a5400}
+  .pill.red{background:var(--red-soft);color:var(--red)}
+  .pill.green{background:var(--green-soft);color:var(--green)}
+  table{width:100%;border-collapse:collapse;font-size:.93rem;margin:10px 0 14px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#e8eef5;color:var(--navy)}
+  .mdt{font-family:"Courier New",monospace;background:#0f1a26;color:#c9f1c9;padding:14px 16px;border-radius:8px;font-size:.88rem;white-space:pre-wrap;line-height:1.45}
+
+  /* SLICE strip */
+  .strip{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0}
+  .strip button{background:#fff;border:2px solid var(--navy);border-radius:8px;padding:14px 6px;cursor:pointer;text-align:center;font-family:inherit}
+  .strip button .big{font-size:2rem;font-weight:700;color:var(--navy);display:block;line-height:1}
+  .strip button .lab{font-size:.78rem;color:var(--muted);display:block;margin-top:6px}
+  .strip button.on{background:var(--navy)}
+  .strip button.on .big,.strip button.on .lab{color:#fff}
+  .strip-panel{min-height:70px}
+
+  /* BE-SAHF accordion */
+  .acc{border:1px solid var(--line);border-radius:10px;background:#fff;margin:10px 0;overflow:hidden}
+  .acc > button{width:100%;text-align:left;background:#fff;border:0;padding:14px 18px;font-size:1rem;cursor:pointer;display:flex;align-items:center;gap:14px;font-family:inherit;color:var(--ink)}
+  .acc > button .letter{width:38px;height:38px;border-radius:8px;background:var(--navy);color:#fff;font-weight:700;font-size:1.2rem;display:flex;align-items:center;justify-content:center;flex:0 0 38px}
+  .acc > button .t{font-weight:600;flex:1}
+  .acc > button .chev{color:var(--muted);transition:transform .2s}
+  .acc.open > button .chev{transform:rotate(90deg)}
+  .acc .body{display:none;padding:0 18px 18px 70px;border-top:1px solid var(--line)}
+  .acc.open .body{display:block}
+  .three{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}
+  .three > div{background:#f6f8fa;border-radius:8px;padding:12px 14px;font-size:.92rem}
+  .three h5{margin:0 0 6px;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:var(--navy)}
+  .three ul{margin:0 0 0 16px;padding:0}
+  .three li{margin:3px 0}
+
+  /* smoke reading exercise */
+  .smoke-ex{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  .smoke-card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}
+  .smoke-card svg{width:100%;height:110px;display:block;background:#dfe4ea;border-radius:6px;margin-bottom:8px}
+  .smoke-card .desc{font-size:.9rem;min-height:60px}
+  .opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .opts button{border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:6px;padding:6px 10px;font-size:.82rem;cursor:pointer;font-family:inherit}
+  .opts button.right{background:var(--green);border-color:var(--green);color:#fff}
+  .opts button.wrong{background:var(--red-soft);border-color:var(--red);color:var(--red)}
+  .fb{font-size:.88rem;margin-top:8px;display:none}
+  .fb.show{display:block}
+
+  /* 360 walk */
+  .walk{display:grid;grid-template-columns:320px 1fr;gap:18px;align-items:start}
+  .walk svg{width:100%;height:auto;display:block}
+  .walk .sector{cursor:pointer}
+  .walk .sector rect,.walk .sector polygon{fill:#e8eef5;stroke:var(--navy);stroke-width:2}
+  .walk .sector:hover rect,.walk .sector:hover polygon{fill:#cfdcec}
+  .walk .sector.seen rect,.walk .sector.seen polygon{fill:#ffe9a8}
+  .walk .sector.on rect,.walk .sector.on polygon{fill:var(--navy)}
+  .walk .sector.on text{fill:#fff}
+  .walk .sector text{font-size:15px;font-weight:700;fill:var(--navy);pointer-events:none;text-anchor:middle}
+  .walk-panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;min-height:180px}
+
+  /* quadrant model */
+  .quad{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+  .quad > div{border:2px solid var(--navy);border-radius:8px;padding:12px 14px;background:#fff}
+  .quad h5{margin:0 0 6px;color:var(--navy);font-size:.95rem}
+  .quad p{font-size:.9rem;margin:0}
+  .quad .hi{background:#e8eef5}
+
+  /* scenario decisions */
+  .decision{border:2px solid var(--navy);border-radius:10px;background:#fff;margin:18px 0;overflow:hidden}
+  .decision .dh{background:var(--navy);color:#fff;padding:10px 16px;font-weight:600}
+  .decision .db{padding:14px 16px}
+  .choice{display:block;width:100%;text-align:left;background:#f6f8fa;border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:8px 0;cursor:pointer;font-family:inherit;font-size:.95rem;color:var(--ink)}
+  .choice:hover{background:#e8eef5}
+  .choice.best{background:var(--green-soft);border-color:var(--green)}
+  .choice.poor{background:var(--red-soft);border-color:var(--red)}
+  .choice.okay{background:var(--amber-soft);border-color:var(--amber)}
+  .choice[disabled]{cursor:default}
+  .verdict{display:none;margin-top:12px}
+  .verdict.show{display:block}
+  .inject{display:none}
+  .inject.show{display:block}
+  .step-lock{opacity:.45;pointer-events:none}
+
+  /* quiz */
+  .q{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0}
+  .q .qt{font-weight:600;margin-bottom:8px}
+
+  textarea{width:100%;min-height:90px;border:1px solid var(--line);border-radius:8px;padding:10px;font-family:inherit;font-size:.93rem}
+  .small{font-size:.85rem;color:var(--muted)}
+  footer{max-width:1000px;margin:0 auto;padding:0 20px 40px;color:var(--muted);font-size:.82rem}
+
+  @media (max-width:760px){
+    .strip{grid-template-columns:repeat(5,1fr);gap:5px}
+    .strip button .big{font-size:1.5rem}
+    .strip button .lab{display:none}
+    .three,.smoke-ex,.quad{grid-template-columns:1fr}
+    .walk{grid-template-columns:1fr}
+    .acc .body{padding-left:18px}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="eyebrow" style="color:rgba(255,255,255,.7)">Incident Command Development · Initial Incident Command</div>
+    <h1>Structure Fire Size-Up: SLICE and BE-SAHF</h1>
+    <div class="sub">A size-up and tactical sequence for the first-arriving Incident Commander at a building fire</div>
+    <div class="progress"><div id="prog"></div></div>
+  </div>
+</header>
+
+<nav><div class="wrap" id="tabs">
+  <button data-p="0" class="active">Why size up</button>
+  <button data-p="1">SLICE</button>
+  <button data-p="2">S · Size-up</button>
+  <button data-p="3">L · Locate</button>
+  <button data-p="4">I · Identify</button>
+  <button data-p="5">C · Cool</button>
+  <button data-p="6">E · Extinguish</button>
+  <button data-p="7">Scenario</button>
+  <button data-p="8">Check &amp; reflect</button>
+</div></nav>
+
+<main>
+
+<!-- ===================== 0 WHY ===================== -->
+<section class="phase active" id="p0">
+  <h2>Why size up?</h2>
+  <p class="lede">Two crews arrive at the same house fire. One goes in through the nearest door. One walks round the building first. Ninety seconds later they are at two very different incidents.</p>
+
+  <div class="card">
+    <div class="eyebrow">The problem</div>
+    <p>At a house fire the temptation is to commit through the door nearest the appliance, because it is there, because there may be someone inside, and because everyone is watching. The view from the front of a building is a partial view. The fire, the openings feeding it and the route the heat is taking may all be at the back.</p>
+  </div>
+
+  <div class="card">
+    <div class="eyebrow">Where NFRS is</div>
+    <p>NFRS does not currently promote a structured size-up model for building fires. This module introduces one that is in use elsewhere in the UK. The content draws on Greater Manchester Fire and Rescue Service operational information cards for SLICE and BE-SAHF, and on published fire dynamics research (NIST, UL FSRI). Where the module refers to tactics, it uses the language NFRS has already adopted: the quadrant model for fighting structure fires and the NFRS phases of positive pressure ventilation.</p>
+    <p>Nothing here replaces NFRS policy. It gives the first-arriving Incident Commander a way of organising what they see in the first two minutes, and a sequence for acting on it.</p>
+  </div>
+
+  <h3>Learning objectives</h3>
+  <div class="card">
+    <p>By the end of this module you should be able to:</p>
+    <ul>
+      <li>Explain the purpose of the SLICE sequence</li>
+      <li>Carry out a structured size-up using BE-SAHF, and say what each indicator changes about your plan</li>
+      <li>Explain the benefits of anti-ventilation and door control as a tactic</li>
+    </ul>
+  </div>
+
+  <div class="callout navy">
+    <strong>How to use this module.</strong> Work through the tabs in order. Each teaching section ends with a short check. The scenario at the end assumes you have covered all five steps. Reveal buttons hide the answer until you have committed to your own.
+  </div>
+
+  <div class="nextbar"><span></span><button class="btn" onclick="go(1)">Next: SLICE →</button></div>
+</section>
+
+<!-- ===================== 1 SLICE ===================== -->
+<section class="phase" id="p1">
+  <h2>SLICE in one screen</h2>
+  <p class="lede">Heat exposure is one of the most significant threats to the safety of both casualties and firefighters. SLICE is a sequence of actions that reduces internal temperature in the fastest possible way.</p>
+
+  <div class="strip" id="strip">
+    <button data-s="0"><span class="big">S</span><span class="lab">Size-up</span></button>
+    <button data-s="1"><span class="big">L</span><span class="lab">Locate the fire</span></button>
+    <button data-s="2"><span class="big">I</span><span class="lab">Identify &amp; control flow paths</span></button>
+    <button data-s="3"><span class="big">C</span><span class="lab">Cool from a safe location</span></button>
+    <button data-s="4"><span class="big">E</span><span class="lab">Extinguish</span></button>
+  </div>
+  <div class="card strip-panel" id="stripPanel"><em class="small">Tap a letter.</em></div>
+
+  <div class="card navy">
+    <h3 style="margin-top:0">The one idea</h3>
+    <p>Every step in SLICE either improves your understanding of where the heat is, or reduces it. Size-up and Locate are understanding. Identify and control flow paths, Cool, and Extinguish are reduction. If you find yourself doing something that does neither, ask why.</p>
+  </div>
+
+  <div class="callout red">
+    <strong>Where rescue sits.</strong> SLICE sequences firefighting, not rescue. It is not "cool the fire before you rescue anyone". Where there is a saveable life, the Incident Commander weighs rescue and firefighting together, and the two are rarely in competition: knowing where the fire is, closing the openings feeding it, and taking heat out of the building all improve a casualty's chances.
+  </div>
+
+  <h3>Where SLICE came from</h3>
+  <div class="card">
+    <p>SLICE-RS was developed in the United States by the International Society of Fire Service Instructors, building on UL FSRI and NIST experiments on ventilation, flow paths and exterior water application. The RS (Rescue and Salvage as "actions of opportunity") is not covered in this module. Greater Manchester FRS has adopted SLICE as an operational information card and paired it with BE-SAHF, a fire behaviour indicator model, as the content of the S. That pairing is what this module teaches.</p>
+  </div>
+
+  <div class="nextbar"><button class="btn ghost" onclick="go(0)">← Back</button><button class="btn" onclick="go(2)">Next: Size-up →</button></div>
+</section>
+
+<!-- ===================== 2 SIZE-UP ===================== -->
+<section class="phase" id="p2">
+  <h2>S · Size-up with BE-SAHF</h2>
+  <p class="lede">BE-SAHF gives you six things to look at during the scene appraisal. This section keeps to the indicators an Incident Commander can read from the street in the first two minutes. Each one follows the same pattern: what to look for, what it might mean, what it changes.</p>
+
+  <div class="callout">
+    <strong>Scene appraisal comes first.</strong> The first-arriving officer should build the fullest picture of the building as soon as possible: all sides where access allows. A full 360 is not always achievable — a mid-terrace with no rear access, a large footprint — so use what there is: an alley, a neighbour's garden, the occupier's knowledge of the layout. Entering the building through the nearest entrance to the appliance may not be the most effective choice. Tactical planning based on a partial view of the building is where things go wrong.
+  </div>
+
+  <div class="acc" id="accB">
+    <button onclick="acc(this)"><span class="letter">B</span><span class="t">Building</span><span class="chev">▶</span></button>
+    <div class="body">
+      <div class="three">
+        <div><h5>Look for</h5><ul><li>Occupancy, and whether everyone is accounted for</li><li>Construction: timber frame, lightweight, refurbishment, cladding</li><li>Floors, basements and layout</li><li>Existing openings, and whether they can be closed</li><li>Exposures and neighbours</li></ul></div>
+        <div><h5>May mean</h5><ul><li>Persons reported changes everything about priority</li><li>Lightweight or timber-frame construction fails early and hides fire in voids</li><li>Basements and split levels put crews above the fire without realising</li><li>Open doors and windows are the ventilation profile you have inherited</li></ul></div>
+        <div><h5>Changes</h5><ul><li>Whether rescue leads</li><li>Where the safest entry point is (usually the lowest, and not the exhaust)</li><li>Whether the building can be closed down</li><li>Whether you need more resources now rather than later</li></ul></div>
+      </div>
+      <p class="small">Ask neighbours and occupiers. Use local knowledge and any SSRI. For larger or more complex buildings, also consider fire protection systems, mechanical ventilation, hazardous contents and environmental risk.</p>
+    </div>
+  </div>
+
+  <div class="acc">
+    <button onclick="acc(this)"><span class="letter">E</span><span class="t">Environment</span><span class="chev">▶</span></button>
+    <div class="body">
+      <div class="three">
+        <div><h5>Look for</h5><ul><li>Wind direction and strength relative to the building</li><li>Air temperature</li></ul></div>
+        <div><h5>May mean</h5><ul><li>Wind onto an opening turns it into an inlet and can drive the fire through the building</li><li>Wind can amplify heat release rate badly, especially at height</li><li>Cold days sharpen air tracks: denser cold air, stronger pressure difference, faster flows</li></ul></div>
+        <div><h5>Changes</h5><ul><li>Which side to attack from (windward, so the flow moves away from the crew)</li><li>Which openings to control before anyone enters</li><li>Whether an opening on the far side is feeding the fire</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="acc">
+    <button onclick="acc(this)"><span class="letter">S</span><span class="t">Smoke</span><span class="chev">▶</span></button>
+    <div class="body">
+      <p>Smoke is the indicator that carries most information and is most often misread. Read it in this order, and treat colour as the least reliable of the set.</p>
+      <div class="three">
+        <div><h5>Velocity</h5><ul><li>Slow, smooth, laminar smoke suggests a low-energy or early fire, or smoke that has cooled on its way from a fire elsewhere</li><li>Fast, turbulent smoke means high energy and conditions approaching flashover</li><li>Pulsing smoke at an opening suggests an under-ventilated, hot compartment and potential backdraught</li></ul></div>
+        <div><h5>Density and volume</h5><ul><li>Dense smoke means hot gases, low visibility and rising pressure</li><li>Judge volume against the size of the compartment: a large volume from a small room is significant; a modest showing from a large open-plan space may still be a big fire</li></ul></div>
+        <div><h5>Rate of change</h5><ul><li>Note the smoke on arrival and watch it</li><li>Increasing volume, density or velocity, or a smoke layer coming down, means worsening conditions</li><li>Estimate what your tactics should do to the smoke, and use that to judge whether they are working</li></ul></div>
+      </div>
+      <div class="three">
+        <div><h5>Location</h5><ul><li>Smoke at an opening may show where the fire is, but not always</li><li>Smoke travels a long way horizontally and vertically</li><li>Several smoke locations may mean several seats of fire, or one fire with several outlets</li></ul></div>
+        <div><h5>Colour</h5><ul><li>Not reliable on its own</li><li>Light or white: early fire, mostly water vapour, or steam if water is going on</li><li>Dirty white to grey: developing fire, pyrolysis products, or black smoke diluted with air as it travels</li><li>Brown: wood, possibly structural</li><li>Black: plastics and synthetics</li></ul></div>
+        <div><h5>Changes</h5><ul><li>Turbulent, dense, high-velocity smoke calls for caution: consider changing conditions from outside before committing crews</li><li>Pulsing smoke calls for particular caution about creating any new opening</li><li>Worsening smoke during operations is a trigger to consider tactical withdrawal</li></ul></div>
+      </div>
+
+      <h4>Read the smoke</h4>
+      <p class="small">Four openings, four descriptions. Pick the reading for each.</p>
+      <div class="smoke-ex">
+        <div class="smoke-card">
+          <svg viewBox="0 0 300 110"><rect x="20" y="30" width="60" height="70" fill="#334"/><path d="M80 45 q20 -6 40 -3 t40 -1 t40 -2 t40 -1" stroke="#c8ccd2" stroke-width="10" fill="none" stroke-linecap="round" opacity=".9"/><path d="M80 60 q20 -4 40 -2 t40 -1 t40 -1" stroke="#d6dae0" stroke-width="7" fill="none" stroke-linecap="round" opacity=".8"/></svg>
+          <div class="desc">Light grey smoke drifting slowly from the top of an open window, smooth and in layers, not much of it.</div>
+          <div class="opts" data-ans="a">
+            <button onclick="smokePick(this,'a')">Early or low-energy, or travelled smoke</button>
+            <button onclick="smokePick(this,'b')">Approaching flashover</button>
+            <button onclick="smokePick(this,'c')">Backdraught risk</button>
+          </div>
+          <div class="fb"></div>
+        </div>
+        <div class="smoke-card">
+          <svg viewBox="0 0 300 110"><rect x="20" y="30" width="60" height="70" fill="#334"/><path d="M80 40 c15 -15 25 10 40 -5 s25 15 40 0 s30 20 45 5 s30 -25 55 -5" stroke="#2a2a2e" stroke-width="16" fill="none" stroke-linecap="round"/><path d="M80 70 c15 15 25 -12 40 3 s25 -18 40 -2 s30 22 45 3" stroke="#3b3b40" stroke-width="12" fill="none" stroke-linecap="round" opacity=".9"/></svg>
+          <div class="desc">Thick, dark smoke forcing out of the whole upper part of a doorway, boiling and fast, filling the yard.</div>
+          <div class="opts" data-ans="b">
+            <button onclick="smokePick(this,'a')">Early or low-energy, or travelled smoke</button>
+            <button onclick="smokePick(this,'b')">Approaching flashover</button>
+            <button onclick="smokePick(this,'c')">Backdraught risk</button>
+          </div>
+          <div class="fb"></div>
+        </div>
+        <div class="smoke-card">
+          <svg viewBox="0 0 300 110"><rect x="20" y="30" width="60" height="70" fill="#334"/><path d="M80 48 q10 -10 22 0" stroke="#4a4a50" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M118 50 q8 -8 16 0" stroke="#4a4a50" stroke-width="8" fill="none" stroke-linecap="round" opacity=".6"/><path d="M60 85 l14 0" stroke="#9ad" stroke-width="3"/><path d="M74 85 l-6 -4 m6 4 l-6 4" stroke="#9ad" stroke-width="3" fill="none"/></svg>
+          <div class="desc">Dark grey-brown smoke puffing in and out at the top of a door that is slightly open, with air being drawn in low down. Windows stained and glass crazed. No flame visible.</div>
+          <div class="opts" data-ans="c">
+            <button onclick="smokePick(this,'a')">Early or low-energy, or travelled smoke</button>
+            <button onclick="smokePick(this,'b')">Approaching flashover</button>
+            <button onclick="smokePick(this,'c')">Backdraught risk</button>
+          </div>
+          <div class="fb"></div>
+        </div>
+        <div class="smoke-card">
+          <svg viewBox="0 0 300 110"><rect x="20" y="30" width="60" height="70" fill="#334"/><path d="M80 42 q30 -8 60 -4 t60 -2 t60 -2" stroke="#f0f2f4" stroke-width="14" fill="none" stroke-linecap="round"/><path d="M80 66 q30 -6 60 -2 t60 -2" stroke="#e6e9ec" stroke-width="10" fill="none" stroke-linecap="round" opacity=".9"/></svg>
+          <div class="desc">Smoke from the first-floor window has just turned bright white and increased in volume, thirty seconds after the crew at the rear opened up a jet.</div>
+          <div class="opts" data-ans="a">
+            <button onclick="smokePick(this,'a')">Steam: water is reaching the fire</button>
+            <button onclick="smokePick(this,'b')">Flashover has occurred</button>
+            <button onclick="smokePick(this,'c')">Second seat of fire</button>
+          </div>
+          <div class="fb"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="acc">
+    <button onclick="acc(this)"><span class="letter">A</span><span class="t">Air track</span><span class="chev">▶</span></button>
+    <div class="body">
+      <p>The air track is the movement of air into, and smoke out of, the building. For flow to happen there must be an inlet, an outlet and a pressure difference. The pressure difference is mostly the fire's energy, but wind and the stack effect add to it.</p>
+      <div class="three">
+        <div><h5>Direction at each opening</h5><ul><li><strong>Out only</strong> (smoke from top to bottom of the opening): a significant fire being fed from other openings, or this opening is downwind</li><li><strong>In only</strong>: the fire is venting elsewhere, or this opening is upwind</li><li><strong>Both</strong> (smoke high, air low): bi-directional. Mostly air suggests an early fire or other openings relieving pressure; mostly smoke suggests high pressure and possibly the only opening</li></ul></div>
+        <div><h5>Rate of flow</h5><ul><li>Smooth, laminar: early, fuel-controlled fire</li><li>Fast, turbulent: ventilation-limited fire that will respond fast to any extra oxygen</li></ul></div>
+        <div><h5>Red flags</h5><ul><li>Air being drawn in that you can see or hear: an under-ventilated fire waiting for oxygen</li><li>A sudden change in the height of the neutral plane, or a reversal of direction: unpredictable conditions</li><li>Both are triggers to consider emergency evacuation or tactical withdrawal</li></ul></div>
+      </div>
+      <div class="callout navy"><strong>Changes:</strong><ul style="margin-bottom:0"><li>Which openings are inlets, and so are candidates for closing</li><li>Which opening is the exhaust, where crews should not be committed</li><li>Which side is windward, and so favoured for the attack</li></ul></div>
+    </div>
+  </div>
+
+  <div class="acc">
+    <button onclick="acc(this)"><span class="letter">H</span><span class="t">Heat</span><span class="chev">▶</span></button>
+    <div class="body">
+      <div class="three">
+        <div><h5>Visual</h5><ul><li>Crazed, blackened or bowing glass</li><li>Blistered paint and smoke staining around door and window frames</li><li>On the TIC: heat at frames, door edges, above the neutral plane, and through floors where crews will be working above or below</li><li>Steam off wet surfaces</li></ul></div>
+        <div><h5>Pressure</h5><ul><li>Modern buildings are airtight: heated gases expand and the pressure in the smoke layer rises fast</li><li>Pressure forces smoke through voids, holds fire doors shut, or fails the compartment boundary and lets air in</li><li>Modern synthetic fuels do this very quickly</li></ul></div>
+        <div><h5>Tactile</h5><ul><li>Heat felt through PPE is a late indicator: by the time it is intolerable, PPE limits are exceeded</li><li>Back of a gloved hand on a door</li><li>Never use tactile heat as the sole trigger for withdrawal</li></ul></div>
+      </div>
+      <div class="callout navy"><strong>Changes:</strong><ul style="margin-bottom:0"><li>Which compartment the fire is in, read from outside without opening anything</li><li>Whether the floor above is survivable</li><li>Whether crews above or below the fire are standing on a compromised floor</li><li>The TIC is a qualitative tool here: read where the heat is and where it is moving, not a temperature. The spot reading is not a thermometer for gases</li></ul></div>
+    </div>
+  </div>
+
+  <div class="acc">
+    <button onclick="acc(this)"><span class="letter">F</span><span class="t">Flame</span><span class="chev">▶</span></button>
+    <div class="body">
+      <div class="three">
+        <div><h5>Duration</h5><ul><li>Continuous flame: well-ventilated, high heat release rate, but predictable</li><li>Transient, flickering flame: fuel and oxygen not mixing well, unpredictable, and can go to rapid fire development as mixing improves</li><li>Transient flames in the smoke layer are a flashover warning</li></ul></div>
+        <div><h5>Location and size</h5><ul><li>Flames against a wall or in a corner are larger and more turbulent than the same fire in free space, and spread faster</li><li>Flames reaching the ceiling jet out across it and heat the smoke layer, feeding back into the fire</li></ul></div>
+        <div><h5>Colour</h5><ul><li>Darker flame: oxygen-starved; brighter as ventilation improves</li><li>Fuel chemistry also affects it, so use with the rest of the picture</li></ul></div>
+      </div>
+      <div class="callout navy"><strong>Changes:</strong><ul style="margin-bottom:0"><li>Flames from an opening are the clearest case for exterior offensive water first</li><li>Transient flame in the smoke layer supports changing conditions before committing crews</li></ul></div>
+    </div>
+  </div>
+
+  <h3>Appraise the scene</h3>
+  <p>A two-storey house with access all round. Tap each side to see what the walk-round shows. When you have seen all four, reveal what BE-SAHF makes of it.</p>
+  <div class="walk">
+    <svg viewBox="0 0 320 320" aria-label="Plan view of a house with four sectors">
+      <rect x="95" y="95" width="130" height="130" fill="#fff" stroke="#003366" stroke-width="3"/>
+      <text x="160" y="155" text-anchor="middle" font-size="12" fill="#5b6673">House</text>
+      <text x="160" y="172" text-anchor="middle" font-size="11" fill="#5b6673">(plan view)</text>
+      <g class="sector" data-sec="1" onclick="walk(this)"><rect x="80" y="240" width="160" height="60" rx="8"/><text x="160" y="275">Front</text></g>
+      <g class="sector" data-sec="2" onclick="walk(this)"><rect x="240" y="95" width="60" height="130" rx="8"/><text x="270" y="165" font-size="13" transform="rotate(90 270 160)">Side · No. 14</text></g>
+      <g class="sector" data-sec="3" onclick="walk(this)"><rect x="80" y="20" width="160" height="60" rx="8"/><text x="160" y="55">Rear</text></g>
+      <g class="sector" data-sec="4" onclick="walk(this)"><rect x="20" y="95" width="60" height="130" rx="8"/><text x="50" y="165" font-size="13" transform="rotate(-90 50 160)">Side · No. 10</text></g>
+      <g><text x="160" y="316" text-anchor="middle" font-size="10" fill="#5b6673">▲ Appliance (street)</text></g>
+    </svg>
+    <div>
+      <div class="walk-panel" id="walkPanel"><em class="small">Tap the front to begin.</em></div>
+      <div style="margin-top:10px">
+        <button class="btn" id="walkReveal" disabled onclick="rv('walkOut',this)">Reveal the BE-SAHF picture</button>
+        <div class="reveal-body" id="walkOut">
+          <table>
+            <tr><th style="width:110px">Building</th><td>Two-storey mid-terrace, single-storey rear extension. Persons: neighbour says out. Openings: front bedroom window open, back door open.</td></tr>
+            <tr><th>Environment</th><td>Light wind onto the front. Front is windward; rear is leeward.</td></tr>
+            <tr><th>Smoke</th><td>Front: light, slow, laminar at first floor. Rear: dark, dense, turbulent, increasing. The rear smoke is the fire; the front smoke has travelled and cooled.</td></tr>
+            <tr><th>Air track</th><td>Rear door: bi-directional, mostly smoke, pulsing. Front door closed, so no through-flow yet. Opening the front door with the back door open would create a uni-directional flow front to rear, with the fire growing on the extra air.</td></tr>
+            <tr><th>Heat</th><td>Kitchen window crazed and stained, one pane failed; TIC shows heat in the kitchen and at the top of the kitchen door into the hall. No heat signature at first-floor rear or front windows.</td></tr>
+            <tr><th>Flame</th><td>None visible. Pulsing at the rear suggests an oxygen-starved compartment, not a fuel-starved one.</td></tr>
+          </table>
+          <p><strong>What it changes:</strong> the fire is ground floor rear, not first floor front. The back door is feeding it and needs closing. The first floor is currently survivable. The attack side is the front (windward, lowest entry, not the exhaust), and water through the kitchen window from the rear would take the heat out before anyone goes in.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nextbar"><button class="btn ghost" onclick="go(1)">← Back</button><button class="btn" onclick="go(3)">Next: Locate →</button></div>
+</section>
+
+<!-- ===================== 3 LOCATE ===================== -->
+<section class="phase" id="p3">
+  <h2>L · Locate the fire</h2>
+  <p class="lede">Smoke shows you where smoke is leaving the building. That is not the same as where the fire is.</p>
+
+  <div class="card">
+    <p>Smoke travels. It rises, spreads along ceilings, finds a staircase and leaves by whichever opening it reaches first. On the way it cools, slows and lightens. A first-floor window showing pale, gentle smoke is exactly what a ground-floor fire looks like from the front of a terrace. A crew committed to the first floor on that evidence is walking up the flow path with the fire beneath them.</p>
+    <p>Locating the fire from outside uses everything in BE-SAHF, and the TIC is the tool that turns a guess into a reading. Scan every side, low to high. Heat at a window frame, staining and crazing on one pane and not another, a hot door edge, a hot patch of external wall: these place the fire in a compartment before anyone opens a door.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">Why it matters for the next three steps</h3>
+    <ul>
+      <li><strong>I:</strong> you cannot tell which openings are inlets and which is the exhaust without knowing where the fire sits between them.</li>
+      <li><strong>C:</strong> the fastest way to get water on the fire depends entirely on which compartment it is in and which opening gives access to it from outside. In some cases internal attack is still quicker. In many house fires, water through a window from outside is faster than dressing a BA team and advancing firefighting media.</li>
+      <li><strong>E:</strong> the entry point for the internal attack should be the one that reaches the fire soonest without putting the team in the exhaust.</li>
+    </ul>
+  </div>
+
+  <div class="callout">
+    <strong>Nearest door versus right door.</strong> The nearest door to the appliance is a fact about parking. The right door is the lowest entry point, on the windward side, that is not the exhaust of a flow path. Sometimes they are the same door. The scene appraisal tells you.
+  </div>
+
+  <div class="card">
+    <h4 style="margin-top:0">Check</h4>
+    <p>Light grey smoke from a first-floor window at the front. Nothing visible at ground floor front. Where do you commit the first BA team?</p>
+    <button class="btn" onclick="rv('loc1',this)">Reveal</button>
+    <div class="reveal-body" id="loc1"><p>Nowhere yet. You have seen one side. The smoke is consistent with a fire on that floor, on the floor below, or at the back of the house. Complete the scene appraisal, scan with the TIC, and decide with the fullest picture you can get. If someone is reported inside, the appraisal is still the first action.</p></div>
+  </div>
+
+  <div class="nextbar"><button class="btn ghost" onclick="go(2)">← Back</button><button class="btn" onclick="go(4)">Next: Flow paths →</button></div>
+</section>
+
+<!-- ===================== 4 FLOW PATHS ===================== -->
+<section class="phase" id="p4">
+  <h2>I · Identify and control flow paths</h2>
+  <p class="lede">The heat release rate of a fire is governed by the oxygen it can get. Every open door and window is a supply line. Closing them can be the first firefighting action, and it can be done from outside with no water and no BA.</p>
+
+  <h3>Just enough flow path to act on</h3>
+  <div class="card">
+    <p>A flow path is the route smoke, heat and air take between the fire and the openings. It needs an inlet, an outlet and a pressure difference. The hottest gases are in the exhaust part of the path.</p>
+    <div class="three">
+      <div><h5>Bi-directional</h5>A single opening acting as both inlet and outlet. Smoke leaves above the neutral plane, air enters below it. The fire is being fed, but at a limited rate. Typical of a single open door. Points you towards the fire compartment.</div>
+      <div><h5>Uni-directional</h5>Two or more openings at different heights or at different distances from the fire, or wind on one of them. One becomes a full inlet, the other a full exhaust (smoke top to bottom of the opening). Fire growth is much faster than the same fire with a bi-directional flow. A height difference of a metre or two is enough for buoyancy to drive it.</div>
+      <div><h5>Alternating</h5>Smoke pulsing in and out of an opening. An under-ventilated compartment breathing. Any new opening feeds it suddenly.</div>
+    </div>
+    <p>Crews and casualties located in the exhaust of a uni-directional flow path are exposed to the hottest gases and the highest rate of convective heat transfer. Opening the front door of a house with a fire at the back and a back door already open can create that path with the crew standing in it.</p>
+  </div>
+
+  <h3>Anti-ventilation</h3>
+  <div class="card navy">
+    <p>During or immediately after the scene appraisal, consider closing doors and windows that are acting as inlets, and consider fitting a smoke curtain. Avoid opening up a smoke-filled building unless it is part of a communicated ventilation strategy.</p>
+    <p>This is anti-ventilation. It costs nothing, needs no water and buys time: closing the building down while the plan is developed can control fire growth before a drop of water is applied.</p>
+  </div>
+
+  <div class="callout">
+    <strong>Closing an inlet is reversible.</strong> A door you shut can be opened again later for access or for ventilation.
+  </div>
+
+  <h3>Positive pressure ventilation</h3>
+  <div class="card">
+    <p>NFRS recognises three phases of PPV:</p>
+    <ul>
+      <li><strong>Phase 1:</strong> Post fire, for smoke clearance</li>
+      <li><strong>Phase 2:</strong> During the fire. PPV can be introduced while the fire is still burning, but is under control</li>
+      <li><strong>Phase 3:</strong> Used in the initial phases of an incident, prior to committing BA crews</li>
+    </ul>
+    <p>PPV adds air, and air is what an under-ventilated fire is waiting for: applied without a controlled outlet or an understanding of the flow path, it can intensify the fire rapidly. Use caution, and treat PPV as an option to consider once the fire's location, the openings and the likely flow path are understood — the things size-up has just produced.</p>
+    <p class="small">PPV technique is not covered in this module.</p>
+  </div>
+
+  <div class="card">
+    <h4 style="margin-top:0">Check</h4>
+    <p>Fire in a ground-floor kitchen at the rear. Back door open, dark smoke pulsing from it. Front door closed. A crew member asks whether to open the front door "to let the smoke out". What do you tell them?</p>
+    <button class="btn" onclick="rv('fp1',this)">Reveal</button>
+    <div class="reveal-body" id="fp1"><p>Use caution. Opening the front door would create a second opening at the far end of the house from the fire. With the back door open, that risks forming an inlet and an exhaust, a uni-directional flow path through the hall and stairs, and a fire growing on the extra air. Consider closing the back door first: that reduces the oxygen supply and can drop the heat release rate. If the front door is then opened for entry, keep it under control.</p></div>
+  </div>
+
+  <div class="nextbar"><button class="btn ghost" onclick="go(3)">← Back</button><button class="btn" onclick="go(5)">Next: Cool →</button></div>
+</section>
+
+<!-- ===================== 5 COOL ===================== -->
+<section class="phase" id="p5">
+  <h2>C · Cool from a safe location</h2>
+  <p class="lede">Once you know where the fire is and have closed down what is feeding it, the priority is to reduce the thermal threat to anyone inside, and to the crew about to go in, in the fastest possible way.</p>
+
+  <h3>Exterior Offensive</h3>
+  <div class="card">
+    <p>Cooling from a safe location is the exterior offensive quadrant, used as a deliberate first step to reduce heat before moving to interior offensive.</p>
+    <div class="quad">
+      <div class="hi"><h5>Exterior offensive</h5><p>Water applied to the fire from outside the building, through an opening, to reduce internal temperature. This is SLICE step C. The building is not written off; the aim is to make interior offensive safer and faster.</p></div>
+      <div class="hi"><h5>Interior offensive</h5><p>BA teams inside, attacking and extinguishing the fire. This is SLICE step E. It follows exterior offensive without a gap.</p></div>
+      <div><h5>Exterior defensive</h5><p>Protecting exposures and containing from outside. Not a SLICE step.</p></div>
+      <div><h5>Interior defensive</h5><p>Crews inside to protect a route, such as a stairwell, without attacking the fire. Relevant when a rescue must happen before the fire is controlled.</p></div>
+    </div>
+    <p>Some services call the exterior-to-interior sequence a transitional attack. The name is less important than the discipline: exterior water, then interior attack, with no delay between them.</p>
+  </div>
+
+  <h3>What exterior offensive is and is not</h3>
+  <div class="card">
+    <ul>
+      <li>It is water applied through the opening that gives most direct access to the fire compartment, from the safest practicable position.</li>
+      <li>It is not "pushing fire" through the building. UL FSRI and NIST experiments consistently show a stream applied from outside reduces temperatures throughout the structure, including on the far side of the fire. The concern about pushing fire onto trapped occupants comes from older experience with steam and ventilation, not from exterior water application.</li>
+      <li>Generally, the branch should be on a straight stream setting to reduce air entrainment, and at a steep angle directed at the ceiling to distribute water throughout the compartment (unless you can hit the fire directly). See NOG Foundation for Firefighting.</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h4 style="margin-top:0">Check</h4>
+    <p>You have located the fire in a ground-floor kitchen with heavy dark smoke and no flame showing. Back door now closed. The second appliance is two minutes away. What quadrant do you declare, and what is the first action?</p>
+    <button class="btn" onclick="rv('cool1',this)">Reveal</button>
+    <div class="reveal-body" id="cool1"><p>Consider exterior offensive, to reduce the temperature in the fire compartment before crews are committed.</p></div>
+  </div>
+
+  <div class="nextbar"><button class="btn ghost" onclick="go(4)">← Back</button><button class="btn" onclick="go(6)">Next: Extinguish →</button></div>
+</section>
+
+<!-- ===================== 6 EXTINGUISH ===================== -->
+<section class="phase" id="p6">
+  <h2>E · Extinguish the fire</h2>
+  <p class="lede">Full extinguishment cannot usually be achieved externally.</p>
+
+  <div class="card">
+    <p>After exterior cooling, temperatures inside come down and the smoke changes. That window closes quickly: a fire that has been cooled but not extinguished will regrow, and after exterior firefighting there is a high likelihood of temperature rebound. There should be no delay between stopping exterior water and deploying the internal team. In practice, the exterior branch can keep working until the internal team is positioned at the door.</p>
+  </div>
+
+  <div class="nextbar"><button class="btn ghost" onclick="go(5)">← Back</button><button class="btn" onclick="go(7)">Next: Scenario →</button></div>
+</section>
+
+<!-- ===================== 7 SCENARIO ===================== -->
+<section class="phase" id="p7">
+  <h2>Scenario: house fire, mid-terrace</h2>
+  <p class="lede">You are the Incident Commander on T03P1. Work through the incident. Each decision reveals what happens next, and what BE-SAHF was telling you.</p>
+
+  <div class="eyebrow">Mobilising message</div>
+  <div class="mdt">FIRE DOMESTIC P2
+APPLIANCES ATTENDING: T03P1, T03P2
+ADDITIONAL INFO
+CALLER STATES SMOKE FROM UPSTAIRS WINDOW</div>
+
+  <div class="card">
+    <div class="eyebrow">On arrival, 14:26 — the front</div>
+    <p>Two-storey brick mid-terrace, front door closed. First-floor front bedroom window has a top opener ajar and light grey smoke drifting from it, slow and in layers. Ground-floor front window closed, curtains drawn, glass clear. A light breeze is on your back as you face the house. A neighbour is on the pavement: "It's Sandra's, she's at work, I rang it in. Her back gate's on the alley."</p>
+    <p>T03P2 has booked mobile behind you, estimated two minutes.</p>
+  </div>
+
+  <!-- D1 -->
+  <div class="decision" id="d1">
+    <div class="dh">Decision 1 · First action</div>
+    <div class="db">
+      <button class="choice" onclick="pick(this,'d1','poor')">Commit a BA team through the front door with firefighting media now, first floor front, while the pump sets in.</button>
+      <button class="choice" onclick="pick(this,'d1','best')">Complete the scene appraisal before anyone enters.</button>
+      <button class="choice" onclick="pick(this,'d1','okay')">Hold everyone at the front until T03P2 arrives and decide together.</button>
+      <div class="verdict" id="d1v">
+        <div class="callout green"><strong>The scene appraisal first.</strong> The front shows one side, and it is showing you travelled smoke. Committing now sends a team to the first floor on the strength of the least reliable indicator in BE-SAHF, smoke colour and location. Holding for T03P2 wastes the minute in which the pump could be set in and the appraisal done.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="inject" id="i2">
+    <div class="card">
+      <div class="eyebrow">14:27, at the rear</div>
+      <p>You walk the alley to the rear. Single-storey kitchen extension. The back door is open, propped with a bin. Dark grey-brown smoke is pulsing out of the top of the doorway, and you can feel air being drawn in at the bottom. The kitchen window is blackened; the glass has crazed and the top pane has failed, with dark smoke issuing from the gap. The TIC shows the kitchen hot, with heat at the top of the door from the kitchen into the hall. The first-floor rear window is shut, and cold on the TIC.</p>
+      <p>Back at the front, the smoke from the bedroom window has slightly increased in volume. Still light grey and slow.</p>
+    </div>
+
+    <div class="card">
+      <h4 style="margin-top:0">What BE-SAHF told you</h4>
+      <button class="btn" onclick="rv('s2b',this)">Reveal</button>
+      <div class="reveal-body" id="s2b">
+        <table>
+          <tr><th style="width:110px">Building</th><td>Two storeys plus single-storey rear extension. Occupier reported out (unconfirmed for anyone else). Two openings: front bedroom top opener, back door.</td></tr>
+          <tr><th>Environment</th><td>Light wind onto the front. Front windward, rear leeward.</td></tr>
+          <tr><th>Smoke</th><td>Rear: dark, dense, pulsing. Front: light, slow, increasing. The fire is at the rear; front smoke has travelled up the stairs and out.</td></tr>
+          <tr><th>Air track</th><td>Back door bi-directional, mostly smoke, alternating. Under-ventilated fire being fed through the back door. Front door closed, so no through-path yet.</td></tr>
+          <tr><th>Heat</th><td>Kitchen hot; kitchen-to-hall door hot at the top; first floor cold. Fire is in the kitchen and heat is starting to move into the hall.</td></tr>
+          <tr><th>Flame</th><td>None visible. Oxygen-limited, not fuel-limited. Any new air will produce a fast change.</td></tr>
+        </table>
+        <p><strong>Location:</strong> ground floor rear kitchen. <strong>Inlet:</strong> back door. <strong>Windward side:</strong> front.</p>
+      </div>
+    </div>
+
+    <!-- D2 -->
+    <div class="decision" id="d2">
+      <div class="dh">Decision 2 · The back door</div>
+      <div class="db">
+        <button class="choice" onclick="pick(this,'d2','poor')">Leave it. It's the fire's ventilation and the smoke is going out that way, away from the stairs.</button>
+        <button class="choice" onclick="pick(this,'d2','best')">Close it.</button>
+        <button class="choice" onclick="pick(this,'d2','poor')">Open the front door too, so the smoke clears through the house and the team can see.</button>
+        <div class="verdict" id="d2v">
+          <div class="callout green"><strong>Close it.</strong> The back door is the inlet feeding an oxygen-starved fire. Closing it drops the heat release rate immediately, from outside, with no water. Leaving it open keeps the fire fed and, the moment the front door is opened for entry, creates a uni-directional flow path through the hall and stairs with the entry team standing in the inlet and the fire growing between them and the exhaust. Opening the front door "to clear the smoke" is that flow path on purpose. Anti-ventilation is the default until you have a ventilation strategy, and you do not have one yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="inject" id="i3">
+    <div class="card">
+      <div class="eyebrow">14:28</div>
+      <p>Back door closed. The crew at the rear reports the pulsing at the door has stopped, with smoke still issuing steadily from the failed pane. T03P2 is turning into the street. Your BA team is rigged and firefighting media is charged at the front door. Time to decide your tactics and give the first task.</p>
+    </div>
+
+    <!-- D3 -->
+    <div class="decision" id="d3">
+      <div class="dh">Decision 3 · Quadrant and first water</div>
+      <div class="db">
+        <button class="choice" onclick="pick(this,'d3','okay')">Interior offensive. BA team in through the front door, cool the hall, advance to the kitchen.</button>
+        <button class="choice" onclick="pick(this,'d3','best')">Exterior offensive first. Water through the kitchen window from the rear yard, aimed high. Then interior offensive via the front door.</button>
+        <button class="choice" onclick="pick(this,'d3','poor')">Exterior defensive. Covering jet on the party walls and the neighbour's extension, wait for the fire to burn down.</button>
+        <div class="verdict" id="d3v">
+          <div class="callout green"><strong>Exterior offensive, then interior offensive.</strong> The fire is located, the inlet is closed, and the kitchen window gives direct access to the fire compartment from a yard where nobody has to breathe smoke. Water through it takes the heat out of the kitchen and the hall before the BA team walks into either. Interior offensive straight away is a legitimate quadrant and would work at this fire, but it puts the team into a hot, oxygen-starved compartment when thirty seconds of water from outside would have changed that.</div>
+          <p>Consider assistance now: the fire is confirmed, persons are not fully accounted for, and a third pump gives you a BA emergency team and a hand at the back.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="inject" id="i4">
+    <div class="card">
+      <div class="eyebrow">14:30</div>
+      <p>The crew at the rear directs water through the kitchen window. Within seconds the smoke from the front bedroom window turns white and swells, then thins. They report the smoke at the back has whitened and slowed. T03P2's BA team is at the front door, rigged and under air, with firefighting media.</p>
+    </div>
+
+    <!-- D4 -->
+    <div class="decision" id="d4">
+      <div class="dh">Decision 4 · The interior team</div>
+      <div class="db">
+        <button class="choice" onclick="pick(this,'d4','best')">Front door, under door control. Cool the hall from the doorway, advance to the kitchen. The rear crew keeps water on until the team calls it.</button>
+        <button class="choice" onclick="pick(this,'d4','poor')">Back door, straight into the kitchen. It's the nearest door to the fire.</button>
+        <button class="choice" onclick="pick(this,'d4','poor')">Both doors at once: T03P1's team through the front, T03P2's team through the back.</button>
+        <div class="verdict" id="d4v">
+          <div class="callout green"><strong>Front door, door control, no gap.</strong> The front is the windward side and the lowest entry that is not the exhaust: with the kitchen window now out and the wind on the front, any flow through the house moves away from a team entering at the front. Going in through the back door puts the team in the fire compartment's own opening, on the leeward side, in the exhaust. Two teams through opposing doors creates a flow path with a crew at each end of it, and firefighting media from each side driving steam and gases onto the other team. The exterior branch stays on until the interior team says stop, so there is no window in which the fire is neither being cooled nor attacked.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="inject" id="i6">
+    <div class="card">
+      <div class="eyebrow">14:40, the Station Manager arrives</div>
+      <p>The BA team has completed a search of the house, which is clear of persons, and reports the fire in the kitchen extinguished; they are checking the void above the extension. The Station Manager walks up and asks for a briefing. You give them the picture in OTHERS.</p>
+    </div>
+    <div class="callout navy"><strong>Reflect:</strong> how would committing through the nearest door on arrival have changed the way this incident developed?</div>
+  </div>
+
+  <div class="nextbar"><button class="btn ghost" onclick="go(6)">← Back</button><button class="btn" onclick="go(8)">Next: Check and reflect →</button></div>
+</section>
+
+<!-- ===================== 8 CHECK ===================== -->
+<section class="phase" id="p8">
+  <h2>Knowledge check</h2>
+  <p class="lede">Six questions. Pick one answer each.</p>
+
+  <div class="q"><div class="qt">1. What is the main principle behind SLICE?</div>
+    <div class="opts">
+      <button onclick="quiz(this,false)">Extinguish the fire as fast as possible</button>
+      <button onclick="quiz(this,true)">Reduce heat exposure inside the building in the fastest possible way</button>
+      <button onclick="quiz(this,false)">Avoid committing BA teams to building fires</button>
+    </div><div class="fb"></div></div>
+
+  <div class="q"><div class="qt">2. Which BE-SAHF indicator is the least reliable on its own?</div>
+    <div class="opts">
+      <button onclick="quiz(this,false)">Air track direction</button>
+      <button onclick="quiz(this,true)">Smoke colour</button>
+      <button onclick="quiz(this,false)">Heat seen on the TIC</button>
+    </div><div class="fb"></div></div>
+
+  <div class="q"><div class="qt">3. Smoke pulsing in and out of a door, with air being drawn in low down, no flame visible. What does it suggest and what do you not do?</div>
+    <div class="opts">
+      <button onclick="quiz(this,true)">Under-ventilated compartment with backdraught potential; do not create a new opening</button>
+      <button onclick="quiz(this,false)">Early fire; open up to let it clear</button>
+      <button onclick="quiz(this,false)">Fire already out; smoke is residual</button>
+    </div><div class="fb"></div></div>
+
+  <div class="q"><div class="qt">4. Fire at the rear of a house, back door open, front door closed. What is the effect of opening the front door before closing the back?</div>
+    <div class="opts">
+      <button onclick="quiz(this,false)">Smoke clears through the house and visibility improves for the team</button>
+      <button onclick="quiz(this,true)">A uni-directional flow path forms through the house and the fire grows on the extra air</button>
+      <button onclick="quiz(this,false)">No effect, because the fire is at the back</button>
+    </div><div class="fb"></div></div>
+
+  <div class="q"><div class="qt">5. In the quadrant model, applying water through an opening from outside to reduce the temperature in the fire compartment before committing crews is:</div>
+    <div class="opts">
+      <button onclick="quiz(this,true)">Exterior offensive</button>
+      <button onclick="quiz(this,false)">Exterior defensive</button>
+      <button onclick="quiz(this,false)">Interior defensive</button>
+    </div><div class="fb"></div></div>
+
+  <div class="q"><div class="qt">6. After exterior water, when does the internal team go in?</div>
+    <div class="opts">
+      <button onclick="quiz(this,false)">Once the smoke has fully cleared and the fire is confirmed out</button>
+      <button onclick="quiz(this,true)">Immediately, with no gap; the exterior branch can keep working until the team is at the door</button>
+      <button onclick="quiz(this,false)">After PPV has been set up</button>
+    </div><div class="fb"></div></div>
+
+  <h3>Reflection</h3>
+  <div class="card">
+    <p>Think of the last house fire you attended or heard about. Where did the first team go in, and what had been seen before they did? What would SLICE have changed?</p>
+  </div>
+
+  <h3>Summary</h3>
+  <div class="card navy">
+    <p><strong>S</strong> — Size-up: appraise the scene with BE-SAHF, seeing every side you can.</p>
+    <p><strong>L</strong> — Locate the fire, from outside where possible, with the TIC.</p>
+    <p><strong>I</strong> — Identify the inlets and the exhaust, and consider closing them down.</p>
+    <p><strong>C</strong> — Cool from a safe location: exterior offensive, water through the opening nearest the fire, aimed high.</p>
+    <p><strong>E</strong> — Extinguish: interior offensive will often be required for full extinguishment.</p>
+    <p>Where there is a saveable life, rescue and firefighting are weighed together; the steps above improve a casualty's chances.</p>
+  </div>
+
+  <h3>Sources and further reading</h3>
+  <div class="card">
+    <ul>
+      <li>Greater Manchester Fire and Rescue Service operational information cards: <em>Firefighting Tactics: Exterior, SLICE</em> and <em>Firefighting Tactics: BE-SAHF</em>. This module's content on the sequence and indicators is drawn from these cards, with permission to be confirmed before wider publication.</li>
+      <li>Raffel, S. and Hartin, E.: B-SAHF / BE-SAHF fire behaviour indicators.</li>
+      <li>UL Fire Safety Research Institute and NIST: experiments on ventilation, flow paths and exterior water application in residential structures.</li>
+      <li>International Society of Fire Service Instructors: SLICE-RS.</li>
+      <li>National Operational Guidance: Foundation for Firefighting.</li>
+      <li><em>Reading Fire</em>, Benjamin Walker.</li>
+    </ul>
+    <p class="small">A companion module on flow paths, ventilation profile and reading the fire with a thermal imaging camera is planned.</p>
+  </div>
+
+  <div class="nextbar"><button class="btn ghost" onclick="go(7)">← Back</button><button class="btn" onclick="go(0)">Back to start</button></div>
+</section>
+
+</main>
+<footer>Structure Fire Size-Up: SLICE and BE-SAHF · Incident Command Development · Works offline in any browser. · <a href="elearning.html" style="color:inherit">Back to the modules board</a></footer>
+
+<script>
+  const phases = document.querySelectorAll('section.phase');
+  const tabs = document.querySelectorAll('#tabs button');
+  function go(n){
+    phases.forEach((p,i)=>p.classList.toggle('active',i===n));
+    tabs.forEach((t,i)=>t.classList.toggle('active',i===n));
+    document.getElementById('prog').style.width = Math.round((n)/(phases.length-1)*100)+'%';
+    window.scrollTo({top:0});
+    tabs[n].scrollIntoView({inline:'center',block:'nearest'});
+  }
+  tabs.forEach(t=>t.addEventListener('click',()=>go(+t.dataset.p)));
+
+  function rv(id,btn){
+    const el=document.getElementById(id);
+    el.classList.toggle('open');
+    if(btn) btn.textContent = el.classList.contains('open') ? 'Hide' : btn.dataset.orig || (btn.dataset.orig=btn.textContent, btn.textContent);
+  }
+
+  const stripText = [
+    '<strong>Size-up.</strong> A scene appraisal as soon as possible, seeing every side of the building where you can and reading BE-SAHF as you go. Situational awareness, operational objectives, and tactical plan all come from here.',
+    '<strong>Locate the fire.</strong> Where it actually is, not where the smoke is showing. TIC from outside. This decides the fastest way to get water on it.',
+    '<strong>Identify and control flow paths.</strong> Find the inlets and the exhaust. Close doors and windows. Control the entry door. Do not open up a smoke-filled building without a ventilation strategy.',
+    '<strong>Cool from a safe location.</strong> Reduce the thermal threat in the fastest way: usually water through an opening from outside, briefly. In quadrant terms, exterior offensive as a first step.',
+    '<strong>Extinguish.</strong> Interior offensive will often be required for full extinguishment.'
+  ];
+  document.querySelectorAll('#strip button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('#strip button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    document.getElementById('stripPanel').innerHTML = stripText[+b.dataset.s];
+  }));
+
+  function acc(btn){ btn.parentElement.classList.toggle('open'); }
+
+  function smokePick(btn,val){
+    const box=btn.parentElement, ans=box.dataset.ans, fb=box.nextElementSibling;
+    box.querySelectorAll('button').forEach(x=>{x.classList.remove('right','wrong');x.disabled=true;});
+    if(val===ans){btn.classList.add('right');fb.innerHTML='<span class="pill green">Correct</span>';}
+    else{btn.classList.add('wrong');box.querySelectorAll('button').forEach(x=>{if(x.getAttribute('onclick').includes("'"+ans+"'"))x.classList.add('right');});fb.innerHTML='<span class="pill red">Not this one</span> The highlighted reading is the one to take.';}
+    fb.classList.add('show');
+  }
+
+  const walkText = {
+    1:'<strong>Front (windward).</strong> Front door closed. First-floor bedroom top opener ajar; light grey smoke, slow, layered. Ground-floor window closed, curtains drawn, glass clear. Neighbour says the occupier is out. Light wind on your back as you face the house.',
+    2:'<strong>Side.</strong> Party wall with number 14. Nothing showing. Number 14 has a rear extension the same as this one. Alley access to the rear runs past the end of the terrace.',
+    3:'<strong>Rear (leeward).</strong> Single-storey kitchen extension. Back door open, propped. Dark grey-brown smoke pulsing out of the top of the doorway; you can feel air going in low down. Kitchen window black, glass crazed, top pane failed with dark smoke issuing. TIC: kitchen hot, heat at the top of the door from kitchen into hall. First-floor rear window closed and cold on the TIC.',
+    4:'<strong>Side.</strong> Party wall with number 10. Nothing showing. Gas meter box on the front elevation at this end of the house.'
+  };
+  const seen=new Set();
+  function walk(g){
+    document.querySelectorAll('.walk .sector').forEach(s=>s.classList.remove('on'));
+    g.classList.add('on'); g.classList.add('seen');
+    seen.add(g.dataset.sec);
+    document.getElementById('walkPanel').innerHTML = walkText[g.dataset.sec] + (seen.size<4 ? '<p class="small" style="margin-top:10px">'+(4-seen.size)+' side'+(seen.size===3?'':'s')+' still to see.</p>' : '<p class="small" style="margin-top:10px">All four sides seen.</p>');
+    if(seen.size===4) document.getElementById('walkReveal').disabled=false;
+  }
+
+  const order=['d1','d2','d3','d4'];
+  const nextInject={d1:'i2',d2:'i3',d3:'i4',d4:'i6'};
+  function pick(btn,id,grade){
+    const box=document.getElementById(id);
+    box.querySelectorAll('.choice').forEach(c=>{c.disabled=true;});
+    btn.classList.add(grade);
+    box.querySelectorAll('.choice').forEach(c=>{ if(c.getAttribute('onclick').includes("'best'")) c.classList.add('best'); });
+    const v=document.getElementById(id+'v'); v.classList.add('show');
+    if(grade!=='best'){ v.insertAdjacentHTML('afterbegin','<p><span class="pill '+(grade==='okay'?'amber':'red')+'">'+(grade==='okay'?'Workable, but not the best choice':'Not this')+'</span></p>'); }
+    else { v.insertAdjacentHTML('afterbegin','<p><span class="pill green">Best choice</span></p>'); }
+    const inj=document.getElementById(nextInject[id]); if(inj){ inj.classList.add('show'); setTimeout(()=>inj.scrollIntoView({behavior:'smooth',block:'start'}),100); }
+  }
+
+  function quiz(btn,ok){
+    const box=btn.parentElement, fb=box.nextElementSibling;
+    box.querySelectorAll('button').forEach(x=>{x.disabled=true;x.classList.remove('right','wrong');});
+    box.querySelectorAll('button').forEach(x=>{ if(x.getAttribute('onclick').includes('true')) x.classList.add('right'); });
+    if(!ok){btn.classList.add('wrong');fb.innerHTML='<span class="pill red">Not quite</span> The highlighted answer is correct.';}
+    else fb.innerHTML='<span class="pill green">Correct</span>';
+    fb.classList.add('show');
+  }
+
+</script>
+</body>
+</html>
