@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>UKRO Live Standings</title>
+<meta name="description" content="Organiser view of the UKRO Rope Rescue Challenge standings, awards and scoring progress.">
+<meta name="theme-color" content="#2B3990">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* EDIT: paste the Google Apps Script Web App URL (ends in /exec) into API_URL in the script below. */
+:root {
+  --navy: #2B3990; --red: #C8261B; --green: #1F6B3E; --amber: #B86E00; --gold: #F0C000;
+  --ink: #1A1C1F; --muted: #5A5E66; --line: #D5D8DE; --bg: #EEF0F3; --card: #fff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Barlow', system-ui, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.4; }
+button, input, select { font: inherit; color: inherit; }
+.topbar { background: var(--navy); color: #fff; padding: 10px 16px 0; padding-top: calc(10px + env(safe-area-inset-top)); }
+.wrap { max-width: 1100px; margin: 0 auto; }
+.toprow { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.topbar a { color: #fff; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; font-size: .85rem; opacity: .85; }
+.topbar h1 { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; font-size: 1.6rem; line-height: 1.05; margin-top: 6px; }
+.topbar .event { font-size: .9rem; opacity: .85; }
+.status { font-size: .82rem; opacity: .9; text-align: right; }
+.status button { background: rgba(255,255,255,.18); border: none; color: #fff; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-weight: 600; margin-left: 6px; }
+.tabs { display: flex; gap: 2px; margin-top: 12px; overflow-x: auto; }
+.tabs button {
+  background: transparent; border: none; color: rgba(255,255,255,.75); padding: 10px 14px 11px; cursor: pointer;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 1rem; white-space: nowrap;
+  border-radius: 8px 8px 0 0;
+}
+.tabs button[aria-selected=true] { background: var(--bg); color: var(--navy); }
+.tabs .badge { display: inline-block; background: var(--gold); color: var(--ink); border-radius: 999px; font-size: .75rem; padding: 0 7px; margin-left: 4px; }
+main { padding: 16px 12px 40px; }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.kpi { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.kpi .k { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: .78rem; color: var(--muted); }
+.kpi .v { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.8rem; line-height: 1.1; }
+.kpi .v small { font-size: 1rem; color: var(--muted); }
+.bar { height: 6px; background: #E2E5EA; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--green); }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
+.card-head { padding: 10px 14px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: 1.1rem; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.card-head .sub { font-size: .85rem; color: var(--muted); font-weight: 600; letter-spacing: .03em; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+th { text-align: left; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: .8rem; color: var(--muted); padding: 8px 10px; border-bottom: 2px solid var(--ink); white-space: nowrap; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th.n, td.n { text-align: right; font-variant-numeric: tabular-nums; }
+td.rank { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.25rem; width: 48px; }
+tr.top1 td.rank { color: #A07800; } tr.top2 td.rank { color: #6E7480; } tr.top3 td.rank { color: #9A5B2A; }
+td.team { font-weight: 700; }
+td.total { font-weight: 700; font-size: 1.1rem; }
+.muted { color: var(--muted); }
+.pill { display: inline-block; border-radius: 999px; padding: 1px 9px; font-size: .78rem; font-weight: 700; }
+.pill.ok { background: #DDF1E4; color: var(--green); }
+.pill.part { background: #FFF0CF; color: #6A4300; }
+.pill.wait { background: #ECEEF2; color: var(--muted); }
+.pill.bad { background: #FDE2DF; color: var(--red); }
+.awards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.filters select { border: 1.5px solid #B9BEC7; border-radius: 8px; padding: 7px 10px; background: #fff; min-height: 40px; }
+.check { padding: 11px 14px; border-top: 1px solid var(--line); display: flex; gap: 12px; align-items: flex-start; }
+.check:first-child { border-top: none; }
+.check .what { font-weight: 700; }
+.check .ver { font-size: .85rem; color: var(--muted); margin-top: 3px; }
+.empty { padding: 16px 14px; color: var(--muted); }
+.note { font-size: .88rem; color: var(--muted); margin: 4px 2px 14px; }
+.gate { max-width: 400px; margin: 40px auto; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 18px; }
+.gate label { display: block; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: .8rem; color: var(--muted); margin-bottom: 6px; }
+.gate input { width: 100%; border: 1.5px solid #B9BEC7; border-radius: 8px; padding: 10px 12px; min-height: 46px; }
+.btn { border: none; border-radius: 9px; min-height: 46px; padding: 0 18px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 1rem; cursor: pointer; background: var(--navy); color: #fff; width: 100%; margin-top: 12px; }
+.err { background: #FDE8E6; border: 1px solid #E8A39C; color: #7A1810; border-radius: 8px; padding: 9px 12px; font-size: .9rem; margin-top: 10px; }
+.stale { background: #FFF4DC; border: 1px solid #E9C46A; color: #5A3A00; border-radius: 8px; padding: 9px 12px; font-size: .9rem; margin-bottom: 12px; }
+@media print {
+  body { background: #fff; } .topbar { background: #fff; color: var(--ink); } .tabs, .status button, .filters { display: none; }
+  .card { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="toprow">
+      <a href="ukro.html">&larr; UKRO board</a>
+      <div class="status" id="status"></div>
+    </div>
+    <h1>Live Standings</h1>
+    <div class="event" id="eventName">Organisers only</div>
+    <div class="tabs" role="tablist" id="tabs" hidden>
+      <button role="tab" data-tab="standings" aria-selected="true">Standings</button>
+      <button role="tab" data-tab="awards" aria-selected="false">Awards</button>
+      <button role="tab" data-tab="scenarios" aria-selected="false">Scenarios</button>
+      <button role="tab" data-tab="checks" aria-selected="false">Checks <span class="badge" id="checkBadge" hidden></span></button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap" id="app"></main>
+
+<script>
+(function () {
+'use strict';
+
+/* ===== EDIT: Google Apps Script Web App URL (ends in /exec) ===== */
+var API_URL = '';
+/* ================================================================ */
+
+var REFRESH_SECONDS = 30;
+var params = new URLSearchParams(location.search);
+function load(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
+function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+function drop(k) { try { localStorage.removeItem(k); } catch (e) {} }
+if (params.get('api')) save('ukro-api', params.get('api'));
+var api = params.get('api') || load('ukro-api', '') || API_URL;
+var pin = load('ukro-org-pin', '');
+var data = load('ukro-standings-cache', null);
+var tab = 'standings', lastOk = data ? data.generated : null, lastErr = '', loading = false;
+var filt = { date: '', rotation: '', status: '' };
+
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function fmtDate(iso, long) {
+  var p = String(iso).split('-'); if (p.length !== 3) return iso;
+  var d = new Date(+p[0], +p[1] - 1, +p[2]);
+  return d.toLocaleDateString('en-GB', long ? { weekday: 'long', day: 'numeric', month: 'short' } : { weekday: 'short', day: 'numeric', month: 'short' });
+}
+function dayName(iso) { var p = String(iso).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('en-GB', { weekday: 'long' }); }
+function ago(iso) {
+  if (!iso) return 'never';
+  var s = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 10) return 'just now'; if (s < 60) return s + ' s ago'; if (s < 3600) return Math.round(s / 60) + ' min ago';
+  return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+function call(body) {
+  return fetch(api, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) })
+    .then(function (r) { if (!r.ok) throw new Error('Server replied ' + r.status); return r.json(); });
+}
+
+function refresh() {
+  if (!api || !pin || loading) return;
+  loading = true; renderStatus();
+  call({ action: 'standings', pin: pin }).then(function (res) {
+    loading = false;
+    if (!res.ok) {
+      if (res.error === 'bad_pin' || res.error === 'forbidden') { pin = ''; drop('ukro-org-pin'); return render(res.message || 'Organiser PIN required.'); }
+      lastErr = res.message || res.error; renderStatus(); return;
+    }
+    data = res.result; lastOk = new Date().toISOString(); lastErr = '';
+    save('ukro-standings-cache', data);
+    render();
+  }, function (err) { loading = false; lastErr = String(err.message || err); renderStatus(); render(); });
+}
+setInterval(refresh, REFRESH_SECONDS * 1000);
+setInterval(renderStatus, 5000);
+document.addEventListener('visibilitychange', function () { if (!document.hidden) refresh(); });
+
+function renderStatus() {
+  var el = $('status');
+  if (!pin || !api) { el.innerHTML = ''; return; }
+  el.innerHTML = (loading ? 'Updating…' : (lastErr ? '<span title="' + esc(lastErr) + '">⚠ Offline · </span>' : '') + 'Updated ' + ago(lastOk)) +
+    '<button id="refreshBtn">Refresh</button><button id="lockBtn">Lock</button>';
+}
+$('status').addEventListener('click', function (e) {
+  if (e.target.id === 'refreshBtn') refresh();
+  if (e.target.id === 'lockBtn') { pin = ''; drop('ukro-org-pin'); drop('ukro-standings-cache'); data = null; render(); }
+});
+$('tabs').addEventListener('click', function (e) {
+  var b = e.target.closest('[data-tab]'); if (!b) return;
+  tab = b.dataset.tab;
+  [].forEach.call(document.querySelectorAll('[data-tab]'), function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+  render();
+});
+
+function render(gateMsg) {
+  renderStatus();
+  if (!api) {
+    $('tabs').hidden = true;
+    $('app').innerHTML = '<div class="gate"><strong>Not connected yet.</strong><p class="note" style="margin-top:8px">Paste the Apps Script Web App URL into <code>API_URL</code> in this page, or open it with <code>?api=…</code> on the address.</p></div>';
+    return;
+  }
+  if (!pin) {
+    $('tabs').hidden = true;
+    $('app').innerHTML = '<form class="gate" id="gate"><label for="pinIn">Organiser PIN</label><input id="pinIn" type="password" autocomplete="current-password" required>' +
+      (gateMsg ? '<div class="err">' + esc(gateMsg) + '</div>' : '') + '<button class="btn" type="submit">Unlock standings</button>' +
+      '<p class="note" style="margin-top:10px">Standings are kept to organisers until the awards.</p></form>';
+    $('gate').addEventListener('submit', function (e) {
+      e.preventDefault(); pin = $('pinIn').value.trim(); save('ukro-org-pin', pin);
+      $('app').innerHTML = '<div class="empty">Loading…</div>'; refresh();
+    });
+    $('pinIn').focus();
+    return;
+  }
+  if (!data) { $('app').innerHTML = '<div class="empty">' + (lastErr ? 'Couldn\'t reach the scoring sheet: ' + esc(lastErr) : 'Loading…') + '</div>'; return; }
+  $('tabs').hidden = false;
+  $('eventName').textContent = data.event;
+  var issues = data.checks.filter(function (c) { return c.type !== 'resent'; }).length;
+  $('checkBadge').hidden = !issues; $('checkBadge').textContent = issues;
+  var h = lastErr ? '<div class="stale">Showing the last standings received (' + esc(ago(lastOk)) + '). Will update when the connection returns.</div>' : '';
+  h += ({ standings: viewStandings, awards: viewAwards, scenarios: viewScenarios, checks: viewChecks })[tab]();
+  $('app').innerHTML = h;
+}
+
+function kpis() {
+  var c = data.counts, all = c.scored + c.partial + c.awaiting;
+  var pct = all ? Math.round(c.scored / all * 100) : 0;
+  return '<div class="kpis">' +
+    '<div class="kpi"><div class="k">Scenarios scored</div><div class="v">' + c.scored + '<small> / ' + all + '</small></div><div class="bar"><i style="width:' + pct + '%"></i></div></div>' +
+    '<div class="kpi"><div class="k">Part-scored</div><div class="v">' + c.partial + '</div></div>' +
+    '<div class="kpi"><div class="k">Sheets received</div><div class="v">' + data.submissions + '</div></div>' +
+    '<div class="kpi"><div class="k">Checks</div><div class="v">' + data.checks.filter(function (x) { return x.type !== 'resent'; }).length + '</div></div>' +
+    '</div>';
+}
+
+function viewStandings() {
+  var days = data.days;
+  var h = kpis() + '<div class="card"><div class="card-head">Overall standings <span class="sub">Highest total wins · equal totals share a rank</span></div><div class="scroll"><table><thead><tr>' +
+    '<th>Rank</th><th>Team</th><th class="n">Opening day</th>' + days.map(function (d) { return '<th class="n">' + esc(dayName(d)) + '</th>'; }).join('') +
+    '<th class="n">Total</th><th class="n">Scored</th></tr></thead><tbody>';
+  data.standings.forEach(function (s) {
+    h += '<tr class="top' + s.rank + '"><td class="rank">' + s.rank + '</td><td class="team">' + esc(s.team) + '</td>' +
+      '<td class="n">' + s.opening + (s.openingNote && s.openingNote !== s.opening + '' ? ' <span class="muted">(' + esc(s.openingNote) + ')</span>' : '') + '</td>' +
+      s.days.map(function (v) { return '<td class="n">' + v + '</td>'; }).join('') +
+      '<td class="n total">' + s.total + '</td><td class="n">' + s.scored + '/' + s.scheduled + (s.partial ? ' <span class="pill part">' + s.partial + ' part</span>' : '') + '</td></tr>';
+  });
+  h += '</tbody></table></div></div>';
+  h += '<p class="note">Overall = opening-day points (' + data.rules.openingPerMinute + ' per minute under ' + data.rules.openingTarget + ') + every fully scored scenario. A scenario counts once its technical &amp; command sheet, and its medical sheet where medical is scored, are in. Teams with fewer scenarios scored aren\'t directly comparable yet.</p>';
+  return h;
+}
+
+function awardTable(title, sub, rows, max) {
+  var h = '<div class="card"><div class="card-head">' + esc(title) + ' <span class="sub">' + esc(sub) + '</span></div><div class="scroll"><table><thead><tr><th>Rank</th><th>Team</th><th class="n">Points</th><th class="n">Sheets</th><th>Progress</th></tr></thead><tbody>';
+  if (!rows.length) h += '<tr><td colspan="5" class="muted">Awaiting scores</td></tr>';
+  rows.forEach(function (r) {
+    h += '<tr class="top' + r.rank + '"><td class="rank">' + r.rank + '</td><td class="team">' + esc(r.team) + '</td><td class="n total">' + r.points + '<span class="muted" style="font-weight:500;font-size:.85rem"> / ' + (r.of * max) + '</span></td>' +
+      '<td class="n">' + r.count + '/' + r.of + '</td><td>' + (r.count >= r.of ? '<span class="pill ok">Complete</span>' : '<span class="pill part">Provisional</span>') + '</td></tr>';
+  });
+  return h + '</tbody></table></div></div>';
+}
+function viewAwards() {
+  return '<div class="awards">' +
+    awardTable('Best Team Leader', 'Command points', data.awards.teamLeader, data.awards.commandMax) +
+    awardTable('Best Medic', 'Medical points', data.awards.medic, data.awards.medicalMax) +
+    '</div><p class="note">Award totals use every technical &amp; command sheet (for command) and medical sheet received from the scenario days. Opening-day points don\'t count towards awards.</p>';
+}
+
+function viewScenarios() {
+  var s = data.scenarios;
+  var dates = s.map(function (x) { return x.date; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
+  var rots = s.map(function (x) { return x.rotation; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
+  function sel(name, opts, label) {
+    return '<select data-filter="' + name + '" aria-label="' + label + '"><option value="">' + label + ': all</option>' +
+      opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (filt[name] === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
+  }
+  var rows = s.filter(function (x) {
+    return (!filt.date || x.date === filt.date) && (!filt.rotation || x.rotation === filt.rotation) && (!filt.status || x.status === filt.status);
+  });
+  var h = '<div class="card"><div class="card-head">Scenario results <span class="sub">' + rows.length + ' shown</span></div><div class="filters">' +
+    sel('date', dates.map(function (d) { return [d, fmtDate(d)]; }), 'Day') +
+    sel('rotation', rots.map(function (r) { return [r, 'Rotation ' + r]; }), 'Rotation') +
+    sel('status', [['scored', 'Scored'], ['partial', 'Part-scored'], ['awaiting', 'Awaiting']], 'Status') +
+    '</div><div class="scroll"><table><thead><tr><th>Day</th><th>Rot.</th><th>Location</th><th>Team</th><th class="n">Tech</th><th class="n">Cmd</th><th>Done</th><th class="n">Med</th><th class="n">Points</th><th>Status</th><th>Assessors</th></tr></thead><tbody>';
+  rows.forEach(function (x) {
+    var tc = x.tc, md = x.med;
+    var st = x.status === 'scored' ? '<span class="pill ok">Scored</span>' : x.status === 'partial' ? '<span class="pill part">Part</span>' : '<span class="pill wait">Awaiting</span>';
+    var amended = (tc && tc.versions > 1) || (md && md.versions > 1) ? ' <span class="pill bad" title="Sheet sent more than once">Resent</span>' : '';
+    h += '<tr><td>' + esc(fmtDate(x.date)) + '</td><td>' + esc(x.rotation) + '</td><td>' + esc(x.location) + '</td><td class="team">' + esc(x.team) + '</td>' +
+      '<td class="n">' + (tc ? tc.technical : '–') + '</td><td class="n">' + (tc ? tc.command : '–') + '</td><td>' + (tc ? esc(tc.completed) : '–') + '</td>' +
+      '<td class="n">' + (x.medicalScored ? (md ? md.medical : '–') : '<span class="muted">n/a</span>') + '</td>' +
+      '<td class="n total">' + (x.points == null ? '' : x.points) + '</td><td>' + st + amended + '</td>' +
+      '<td class="muted">' + esc([tc && tc.assessor, md && md.assessor].filter(Boolean).join(' · ')) + '</td></tr>';
+  });
+  if (!rows.length) h += '<tr><td colspan="11" class="muted">Nothing matches these filters.</td></tr>';
+  return h + '</tbody></table></div></div>';
+}
+document.addEventListener('change', function (e) {
+  var f = e.target.getAttribute && e.target.getAttribute('data-filter');
+  if (f) { filt[f] = e.target.value; render(); }
+});
+
+function viewChecks() {
+  var order = { conflict: 0, unscheduled: 1, negative: 2, missing: 3, resent: 4 };
+  var label = { conflict: ['bad', 'Conflicting scores'], unscheduled: ['bad', 'Not on schedule'], negative: ['part', 'Below zero'], missing: ['part', 'Missing sheet'], resent: ['wait', 'Resent'] };
+  var list = data.checks.slice().sort(function (a, b) { return order[a.type] - order[b.type]; });
+  var h = '<div class="card"><div class="card-head">Things to check <span class="sub">' + list.length + '</span></div>';
+  if (!list.length) h += '<div class="empty">Nothing to check. Every sheet received matches the schedule, with no conflicts.</div>';
+  list.forEach(function (c) {
+    var s = c.slot || {};
+    h += '<div class="check"><span class="pill ' + label[c.type][0] + '">' + label[c.type][1] + '</span><div><div class="what">' + esc(s.team) + ' · ' + esc(s.location) + '</div>' +
+      '<div class="muted">' + esc(fmtDate(s.date)) + ', rotation ' + esc(s.rotation) + ' · ' + esc(c.message) + '</div>' +
+      (c.versions ? '<div class="ver">' + c.versions.map(function (v, i) {
+        var sc = v.medical !== null && v.medical !== '' && v.medical !== undefined ? 'medical ' + v.medical : 'T ' + v.technical + ' · C ' + v.command + ' · ' + v.completed;
+        return (i === c.versions.length - 1 ? '<strong>Counts:</strong> ' : 'Earlier: ') + esc(sc) + ' — ' + esc(v.assessor) + ', ' + esc(new Date(v.received).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }));
+      }).join('<br>') + '</div>' : '') + '</div></div>';
+  });
+  h += '</div><p class="note">To remove a wrong sheet, find it on the Submissions tab of the Google Sheet and type <strong>VOID</strong> in its Status column. ' +
+    (data.voided ? data.voided + ' sheet' + (data.voided === 1 ? ' is' : 's are') + ' currently voided.' : '') + '</p>';
+  return h;
+}
+
+render();
+if (pin && api) refresh();
+})();
+</script>
+</body>
+</html>

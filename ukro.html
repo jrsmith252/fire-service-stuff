@@ -65,20 +65,44 @@
       <div class="tallies">
         <div class="col-label">Tallies &mdash; Competition Tools</div>
 
-        <!-- ============ TOOLS IN DEVELOPMENT ============
-             As each tool is built, replace its slot with an <a class="tally"> block
-             (copy one from index.html), changing href, .type, <h2>, .desc and .open-cue.
-        ============================================== -->
+        <!-- ============ Assessor: Technical & Command ============ -->
+        <a class="tally" href="ukro-scoresheet.html?sheet=tc">
+          <div class="tally-row">
+            <span class="field-label">Assessor Sheet</span>
+            <span class="type">Technical &amp; Command</span>
+          </div>
+          <h2>Technical &amp; Command Score Sheet</h2>
+          <p class="desc">For scenario assessors. Tap in deductions against each criterion; technical /100, command /50 and the completion bonus total themselves. Keeps working without signal and sends when it can.</p>
+          <span class="open-cue">Open the score sheet</span>
+        </a>
 
-        <div class="tally-slot">Assessor scoresheet: Technical &amp; Command &mdash; in development</div>
-        <div class="tally-slot">Assessor scoresheet: Medical &mdash; in development</div>
-        <div class="tally-slot">Live standings &amp; awards &mdash; in development</div>
+        <!-- ============ Assessor: Medical ============ -->
+        <a class="tally" href="ukro-scoresheet.html?sheet=medical">
+          <div class="tally-row">
+            <span class="field-label">Assessor Sheet</span>
+            <span class="type">Medical</span>
+          </div>
+          <h2>Medical Score Sheet</h2>
+          <p class="desc">For medical evaluators at scenarios where medical is scored. One deduction per topic, minor or critical, totalled out of 50.</p>
+          <span class="open-cue">Open the score sheet</span>
+        </a>
+
+        <!-- ============ Organiser: Standings ============ -->
+        <a class="tally" href="ukro-standings.html">
+          <div class="tally-row">
+            <span class="field-label">Organisers Only</span>
+            <span class="type">Results</span>
+          </div>
+          <h2>Live Standings &amp; Awards</h2>
+          <p class="desc">Overall standings, Best Team Leader and Best Medic, scenario progress and a list of sheets to check. Organiser PIN required.</p>
+          <span class="open-cue">Open the standings</span>
+        </a>
       </div>
 
       <div class="remarks">
         <div class="col-label">Remarks</div>
         <div class="remarks-lines">
-          <p class="remarks-note">Digital scoresheets for assessors, feeding the overall standings automatically. No more re-keying paper sheets at the end of the day.</p>
+          <p class="remarks-note">Digital scoresheets for assessors, feeding the overall standings automatically. No more re-keying paper sheets at the end of the day. Assessors: you'll need the event PIN from the organiser.</p>
         </div>
       </div>
     </div>

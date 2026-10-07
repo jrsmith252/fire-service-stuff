@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>UKRO Assessor Scoresheet</title>
+<meta name="description" content="Digital assessor scoresheet for the UKRO Rope Rescue Challenge.">
+<meta name="theme-color" content="#2B3990">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   UKRO Assessor Scoresheet
+   ?sheet=tc       Technical & Command assessor
+   ?sheet=medical  Medical assessor
+   ========================================================================== */
+
+/* EDIT: paste the Google Apps Script Web App URL (ends in /exec) into API_URL in the script below. */
+
+:root {
+  --navy: #2B3990;
+  --navy-dark: #1E2870;
+  --red: #C8261B;
+  --green: #1F6B3E;
+  --amber: #B86E00;
+  --ink: #1A1C1F;
+  --muted: #5A5E66;
+  --line: #D5D8DE;
+  --bg: #EEF0F3;
+  --card: #FFFFFF;
+  --accent: var(--navy);
+}
+body.medical { --accent: var(--green); }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: 'Barlow', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.4;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+.cond { font-family: 'Barlow Condensed', system-ui, sans-serif; }
+
+/* ---------- top bar ---------- */
+.topbar {
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 16px 12px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+}
+.topbar-inner { max-width: 820px; margin: 0 auto; }
+.topbar-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.topbar a { color: #fff; text-decoration: none; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; font-size: .85rem; opacity: .85; }
+.topbar h1 { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .02em; font-size: 1.45rem; line-height: 1.05; margin-top: 6px; }
+.topbar .event { font-size: .85rem; opacity: .85; margin-top: 2px; }
+.net {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  font-size: .78rem; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.18); white-space: nowrap;
+}
+.net.off { background: #FFE2A8; color: #5A3A00; }
+.net.queued { background: #FFE2A8; color: #5A3A00; }
+
+main { max-width: 820px; margin: 0 auto; padding: 14px 12px; }
+
+/* ---------- cards ---------- */
+.card { background: var(--card); border-radius: 10px; border: 1px solid var(--line); margin-bottom: 14px; overflow: hidden; }
+.card-head {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+  padding: 10px 14px; background: var(--accent); color: #fff;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; font-size: 1.1rem;
+}
+.card-head.technical { background: var(--navy); }
+.card-head.command { background: var(--red); }
+.card-head.medical { background: var(--green); }
+.card-head.plain { background: #fff; color: var(--ink); border-bottom: 1px solid var(--line); }
+.card-head .sub { font-weight: 600; font-size: .9rem; opacity: .9; letter-spacing: .04em; }
+.card-body { padding: 12px 14px 14px; }
+
+label.f { display: block; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: .8rem; color: var(--muted); margin: 10px 0 5px; }
+label.f:first-child { margin-top: 0; }
+input[type=text], input[type=password], select, textarea {
+  width: 100%; border: 1.5px solid #B9BEC7; border-radius: 8px; padding: 10px 12px; background: #fff; font-size: 1rem; min-height: 46px;
+}
+textarea { min-height: 70px; resize: vertical; }
+input:focus, select:focus, textarea:focus { outline: 3px solid rgba(43,57,144,.25); border-color: var(--accent); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 10px; }
+@media (max-width: 520px) { .grid3 { grid-template-columns: 1fr 1fr; } .grid3 > :last-child { grid-column: 1 / -1; } }
+
+/* ---------- chips ---------- */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  border: 1.5px solid #B9BEC7; background: #fff; border-radius: 8px; padding: 9px 14px; min-height: 44px;
+  font-weight: 600; cursor: pointer; text-align: left; line-height: 1.15;
+}
+.chip small { display: block; font-weight: 500; color: var(--muted); font-size: .78rem; }
+.chip[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip[aria-pressed=true] small { color: rgba(255,255,255,.85); }
+.chip .done { font-size: .72rem; font-weight: 700; color: var(--green); display: block; }
+.chip[aria-pressed=true] .done { color: #CFF5DA; }
+.hint { font-size: .85rem; color: var(--muted); margin-top: 6px; }
+.warn { background: #FFF4DC; border: 1px solid #E9C46A; color: #5A3A00; border-radius: 8px; padding: 9px 12px; font-size: .9rem; margin-top: 10px; }
+.err { background: #FDE8E6; border: 1px solid #E8A39C; color: #7A1810; border-radius: 8px; padding: 9px 12px; font-size: .9rem; margin-top: 10px; }
+
+/* ---------- criteria rows ---------- */
+.crit { border-top: 1px solid var(--line); padding: 11px 14px; }
+.crit:first-child { border-top: none; }
+.crit-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.crit-name { font-weight: 700; font-size: 1rem; line-height: 1.2; }
+.crit-look { font-size: .85rem; color: var(--muted); margin-top: 2px; }
+.crit-ded { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--red); white-space: nowrap; min-width: 40px; text-align: right; }
+.crit-ded.zero { color: #B9BEC7; }
+.crit-ctl { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 8px; margin-top: 9px; }
+.crit-ctl .note-btn { grid-column: 1 / -1; justify-self: start; padding: 2px 0; }
+.stepper { display: flex; align-items: center; border: 1.5px solid #B9BEC7; border-radius: 8px; overflow: hidden; background: #fff; max-width: 240px; }
+.stepper .lab { flex: 1; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: .72rem; letter-spacing: .03em; text-transform: uppercase; padding: 0 4px; color: var(--muted); line-height: 1.05; text-align: center; }
+.stepper.sc .lab { color: var(--red); }
+.stepper button { width: 42px; height: 46px; flex: 0 0 auto; border: none; background: #F3F4F7; font-size: 1.35rem; font-weight: 700; cursor: pointer; }
+.stepper button:active { background: #DDE0E6; }
+.stepper .val { min-width: 24px; text-align: center; font-weight: 700; font-size: 1.15rem; }
+.stepper.has { border-color: var(--amber); }
+.stepper.sc.has { border-color: var(--red); background: #FDF0EF; }
+.note-btn { border: none; background: none; color: var(--accent); font-weight: 600; font-size: .9rem; cursor: pointer; padding: 8px 4px; text-decoration: underline; text-underline-offset: 3px; }
+.note-btn.has { font-weight: 700; }
+.crit textarea { margin-top: 8px; min-height: 56px; }
+
+.seg { grid-column: 1 / -1; display: flex; border: 1.5px solid #B9BEC7; border-radius: 8px; overflow: hidden; max-width: 420px; }
+.seg button { flex: 1; }
+.seg button { border: none; background: #fff; padding: 0 8px; height: 46px; font-weight: 700; cursor: pointer; border-left: 1px solid #D5D8DE; }
+.seg button:first-child { border-left: none; }
+.seg button[aria-pressed=true].none { background: #E9ECF1; }
+.seg button[aria-pressed=true].minor { background: var(--amber); color: #fff; }
+.seg button[aria-pressed=true].critical { background: var(--red); color: #fff; }
+
+.yesno { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.yesno button { min-height: 58px; border-radius: 10px; border: 2px solid #B9BEC7; background: #fff; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.15rem; text-transform: uppercase; letter-spacing: .04em; cursor: pointer; }
+.yesno button small { display: block; font-family: 'Barlow', sans-serif; font-size: .8rem; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.yesno button.yes[aria-pressed=true] { background: var(--green); border-color: var(--green); color: #fff; }
+.yesno button.no[aria-pressed=true] { background: var(--red); border-color: var(--red); color: #fff; }
+
+/* ---------- sticky totals ---------- */
+.totals {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  background: var(--ink); color: #fff;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 16px rgba(0,0,0,.18);
+}
+.totals-inner { max-width: 820px; margin: 0 auto; display: flex; align-items: center; gap: 10px; }
+.tot-items { display: flex; gap: 12px; flex: 1; min-width: 0; }
+.tot { line-height: 1.05; white-space: nowrap; }
+.tot .k { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: .7rem; opacity: .75; }
+.tot .v { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1.35rem; }
+@media (max-width: 420px) { .tot.opt { display: none; } .tot-items { gap: 10px; } }
+.tot .v small { font-size: .85rem; opacity: .7; font-weight: 600; }
+.tot.neg .v { color: #FF9A90; }
+.tot.big .v { color: #FFD54A; }
+.send {
+  background: #F0C000; color: var(--ink); border: none; border-radius: 9px; padding: 0 14px; min-height: 50px; line-height: 1.05; flex: 0 0 auto;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 1.05rem; cursor: pointer; white-space: nowrap;
+}
+.send:disabled { opacity: .45; }
+
+/* ---------- buttons ---------- */
+.btn { border: none; border-radius: 9px; min-height: 48px; padding: 0 18px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 1rem; cursor: pointer; background: var(--accent); color: #fff; }
+.btn.ghost { background: #fff; color: var(--ink); border: 1.5px solid #B9BEC7; }
+.btn.small { min-height: 38px; font-size: .85rem; padding: 0 12px; }
+.link { background: none; border: none; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-weight: 600; padding: 6px 0; }
+
+/* ---------- modal ---------- */
+.modal-bg { position: fixed; inset: 0; background: rgba(15,17,22,.55); z-index: 20; display: none; align-items: flex-end; justify-content: center; }
+.modal-bg.open { display: flex; }
+.modal { background: #fff; width: 100%; max-width: 620px; max-height: 92vh; overflow-y: auto; border-radius: 14px 14px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); }
+@media (min-width: 640px) { .modal-bg { align-items: center; } .modal { border-radius: 14px; } }
+.modal h2 { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-size: 1.4rem; letter-spacing: .03em; }
+.modal .who { color: var(--muted); margin: 2px 0 12px; }
+.sumtable { width: 100%; border-collapse: collapse; margin: 8px 0 12px; }
+.sumtable td { padding: 7px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.sumtable td.n { text-align: right; font-weight: 700; white-space: nowrap; }
+.sumtable tr.total td { font-weight: 700; font-size: 1.1rem; border-bottom: none; border-top: 2px solid var(--ink); }
+.dedlist { font-size: .9rem; color: var(--muted); margin: -4px 0 12px; }
+.dedlist li { margin-left: 18px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
+.confirm { display: flex; gap: 10px; align-items: flex-start; background: #FDE8E6; border-radius: 8px; padding: 10px; margin-top: 8px; font-weight: 600; }
+.confirm input { width: 24px; height: 24px; flex: 0 0 auto; margin-top: 1px; }
+
+/* ---------- sent log ---------- */
+.log-row { display: flex; justify-content: space-between; gap: 10px; padding: 9px 14px; border-top: 1px solid var(--line); font-size: .92rem; }
+.log-row:first-child { border-top: none; }
+.log-row .st { font-weight: 700; white-space: nowrap; font-size: .85rem; }
+.st.ok { color: var(--green); }
+.st.wait { color: var(--amber); }
+.st.bad { color: var(--red); }
+.empty { padding: 12px 14px; color: var(--muted); font-size: .92rem; }
+
+/* ---------- PIN screen ---------- */
+.gate { max-width: 420px; margin: 30px auto; }
+.toast { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 9px; z-index: 30; font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: 92vw; display: none; }
+.toast.show { display: block; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-row">
+      <a href="ukro.html">&larr; UKRO board</a>
+      <span class="net" id="net">Online</span>
+    </div>
+    <h1 id="title">Assessor Score Sheet</h1>
+    <div class="event" id="eventName">UKRO Rope Rescue Challenge</div>
+  </div>
+</div>
+
+<main id="app"></main>
+
+<div class="totals" id="totals" hidden></div>
+
+<div class="modal-bg" id="modalBg" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal" id="modal"></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+'use strict';
+
+/* ===== EDIT: Google Apps Script Web App URL (ends in /exec) ===== */
+var API_URL = '';
+/* ================================================================ */
+
+var params = new URLSearchParams(location.search);
+var SHEET = params.get('sheet') === 'medical' ? 'medical' : 'tc';
+var LS = {
+  api: 'ukro-api', pin: 'ukro-pin', cfg: 'ukro-config', assessor: 'ukro-assessor',
+  draft: 'ukro-draft-' + SHEET, outbox: 'ukro-outbox', sent: 'ukro-sent', loc: 'ukro-loc-' + SHEET
+};
+
+/* ---------- small helpers ---------- */
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function load(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
+function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+function drop(k) { try { localStorage.removeItem(k); } catch (e) {} }
+function uid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+function fmtDate(iso) {
+  var p = String(iso).split('-'); if (p.length !== 3) return iso;
+  var d = new Date(+p[0], +p[1] - 1, +p[2]);
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+function todayISO() {
+  var d = new Date(), m = d.getMonth() + 1, dd = d.getDate();
+  return d.getFullYear() + '-' + (m < 10 ? '0' : '') + m + '-' + (dd < 10 ? '0' : '') + dd;
+}
+function toast(msg, ms) {
+  var t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('show'); }, ms || 3500);
+}
+
+var api = params.get('api') || load(LS.api, '') || API_URL;
+if (params.get('api')) save(LS.api, params.get('api'));
+
+/* ---------- state ---------- */
+var cfg = load(LS.cfg, null);
+var pin = load(LS.pin, '');
+var form = load(LS.draft, null) || blankForm();
+
+function blankForm(keep) {
+  keep = keep || {};
+  return {
+    assessor: keep.assessor || load(LS.assessor, ''),
+    date: keep.date || '', rotation: keep.rotation || '', location: keep.location || load(LS.loc, ''), team: '',
+    teamLeader: '', timeAllocation: '', completionTime: '', contactTime: '', completed: '',
+    ded: { technical: {}, command: {}, medical: {} },
+    safetyCritical: '', goodPractice: '', keyLearning: '', comments: ''
+  };
+}
+function persist() { save(LS.draft, form); }
+
+document.body.classList.toggle('medical', SHEET === 'medical');
+$('title').textContent = SHEET === 'medical' ? 'Medical Assessor Score Sheet' : 'Technical & Command Score Sheet';
+document.title = (SHEET === 'medical' ? 'Medical' : 'Technical & Command') + ' Scoresheet · UKRO';
+
+/* ---------- network ---------- */
+function call(body) {
+  if (!api) return Promise.reject(new Error('The scoring sheet address has not been set up yet.'));
+  var ctrl = window.AbortController ? new AbortController() : null;
+  var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 20000);
+  return fetch(api, {
+    method: 'POST', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body), signal: ctrl ? ctrl.signal : undefined
+  }).then(function (r) {
+    clearTimeout(timer);
+    if (!r.ok) throw new Error('Server replied ' + r.status);
+    return r.json();
+  }, function (e) { clearTimeout(timer); throw e; });
+}
+
+/* ---------- scoring (mirrors the Apps Script) ---------- */
+function rules() { return (cfg && cfg.rules) || { technicalMax: 100, commandMax: 50, medicalMax: 50, nonSafetyCritical: 2, safetyCritical: 25, medicalMinor: 2, medicalCritical: 10, completionBonus: 25, maxCountPerBox: 20 }; }
+function sectionScore(section) {
+  var R = rules(), max = section === 'technical' ? R.technicalMax : section === 'command' ? R.commandMax : R.medicalMax;
+  var lost = 0;
+  (cfg.criteria[section] || []).forEach(function (c) {
+    var d = form.ded[section][c[0]] || {};
+    if (section === 'medical') lost += d.level === 'critical' ? R.medicalCritical : d.level === 'minor' ? R.medicalMinor : 0;
+    else lost += (d.nsc || 0) * R.nonSafetyCritical + (d.sc || 0) * R.safetyCritical;
+  });
+  return max - lost;
+}
+function scCount() {
+  var n = 0;
+  ['technical', 'command'].forEach(function (s) { Object.keys(form.ded[s]).forEach(function (k) { n += form.ded[s][k].sc || 0; }); });
+  Object.keys(form.ded.medical).forEach(function (k) { if (form.ded.medical[k].level === 'critical') n++; });
+  return n;
+}
+
+/* ---------- schedule helpers ---------- */
+function sched() { return (cfg && cfg.schedule) || []; }
+function locAllowed(name) {
+  if (SHEET !== 'medical') return true;
+  var l = (cfg.locations || []).filter(function (x) { return x.name === name; })[0];
+  return !l || l.medical;
+}
+function uniq(a) { return a.filter(function (x, i) { return a.indexOf(x) === i; }); }
+function dates() { return uniq(sched().map(function (r) { return r.date; })).sort(); }
+function rotations(date) {
+  var seen = {}, out = [];
+  sched().forEach(function (r) { if (r.date === date && !seen[r.rotation]) { seen[r.rotation] = 1; out.push({ rotation: r.rotation, time: r.time }); } });
+  return out.sort(function (a, b) { return Number(a.rotation) - Number(b.rotation); });
+}
+function locationsFor(date, rot) {
+  return uniq(sched().filter(function (r) { return (!date || r.date === date) && (!rot || r.rotation === rot); })
+    .map(function (r) { return r.location; })).filter(locAllowed).sort();
+}
+function teamsFor(date, rot, loc) {
+  return sched().filter(function (r) { return r.date === date && r.rotation === rot && r.location === loc; }).map(function (r) { return r.team; });
+}
+function slotKey(s) { return [SHEET, s.date, s.rotation, s.location, s.team].join('|'); }
+function alreadySent(team) {
+  var k = slotKey({ date: form.date, rotation: form.rotation, location: form.location, team: team });
+  return sentLog().some(function (x) { return x.key === k; });
+}
+function guessRotation(date) {
+  // Pick the rotation running now (or next) for today's date.
+  if (date !== todayISO()) return '';
+  var now = new Date(), mins = now.getHours() * 60 + now.getMinutes(), best = '';
+  rotations(date).forEach(function (r) {
+    var m = String(r.time).match(/(\d{1,2}):(\d{2})/);
+    if (m && +m[1] * 60 + +m[2] - 30 <= mins) best = r.rotation;
+  });
+  return best || (rotations(date)[0] || {}).rotation || '';
+}
+
+/* ======================================================================
+   OUTBOX — every scoresheet is saved on the device first, then sent.
+   If there's no signal it stays queued and retries automatically.
+   ====================================================================== */
+function outbox() { return load(LS.outbox, []); }
+function sentLog() { return load(LS.sent, []); }
+var flushing = false;
+function flush() {
+  if (flushing) return Promise.resolve();
+  var box = outbox().filter(function (x) { return x.state !== 'rejected'; });
+  if (!box.length) { renderNet(); return Promise.resolve(); }
+  flushing = true; renderNet();
+  var chain = Promise.resolve();
+  box.forEach(function (item) {
+    chain = chain.then(function () {
+      return call({ action: 'submit', pin: pin, submission: item.submission }).then(function (res) {
+        var all = outbox();
+        var idx = all.map(function (x) { return x.submission.id; }).indexOf(item.submission.id);
+        if (res.ok) {
+          if (idx >= 0) all.splice(idx, 1);
+          save(LS.outbox, all);
+          markSent(item.submission.id, 'sent');
+          toast('Scores received: ' + item.submission.team);
+        } else {
+          if (idx >= 0) { all[idx].state = 'rejected'; all[idx].error = res.message || res.error; }
+          save(LS.outbox, all);
+          markSent(item.submission.id, 'rejected', res.message || res.error);
+        }
+      }, function (err) {
+        var all = outbox();
+        all.forEach(function (x) { if (x.submission.id === item.submission.id) { x.tries = (x.tries || 0) + 1; x.error = String(err.message || err); } });
+        save(LS.outbox, all);
+        throw err;                // stop the chain; retry later
+      });
+    });
+  });
+  return chain.catch(function () {}).then(function () { flushing = false; renderNet(); renderLog(); });
+}
+function markSent(id, state, error) {
+  var log = sentLog();
+  log.forEach(function (x) { if (x.id === id) { x.state = state; x.error = error || ''; x.at = new Date().toISOString(); } });
+  save(LS.sent, log);
+  renderLog();
+}
+setInterval(function () { if (outbox().length) flush(); }, 20000);
+window.addEventListener('online', function () { renderNet(); flush(); });
+window.addEventListener('offline', renderNet);
+
+function renderNet() {
+  var el = $('net'), q = outbox().filter(function (x) { return x.state !== 'rejected'; }).length;
+  if (q) { el.className = 'net queued'; el.textContent = flushing ? 'Sending…' : q + ' waiting to send'; }
+  else if (!navigator.onLine) { el.className = 'net off'; el.textContent = 'No signal'; }
+  else { el.className = 'net'; el.textContent = 'Online'; }
+}
+
+/* ======================================================================
+   RENDERING
+   ====================================================================== */
+function render() {
+  renderNet();
+  if (!api) return renderNoApi();
+  if (!cfg || !pin) return renderGate();
+  $('eventName').textContent = cfg.event;
+  if (!form.date) {
+    var ds = dates();
+    form.date = ds.indexOf(todayISO()) >= 0 ? todayISO() : '';
+    if (form.date && !form.rotation) form.rotation = guessRotation(form.date);
+  }
+  var h = '';
+  h += renderScenario();
+  if (form.team) {
+    h += SHEET === 'tc' ? renderTC() : renderMedical();
+  } else {
+    h += '<div class="card"><div class="empty">Choose the date, rotation, location and team above to open the score sheet.</div></div>';
+  }
+  h += '<div class="card"><div class="card-head plain">Sent from this device <span class="sub" id="logCount"></span></div><div id="log"></div></div>';
+  h += '<p class="hint" style="text-align:center;margin:6px 0 20px"><button class="link" data-act="refresh">Refresh timetable</button> · <button class="link" data-act="signout">Change PIN</button></p>';
+  $('app').innerHTML = h;
+  renderLog();
+  renderTotals();
+}
+
+function renderNoApi() {
+  $('totals').hidden = true;
+  $('app').innerHTML = '<div class="card gate"><div class="card-head plain">Not connected yet</div><div class="card-body">' +
+    '<p>This scoresheet hasn\'t been linked to the event\'s scoring sheet yet.</p>' +
+    '<p class="hint">Organiser: deploy the Apps Script and paste its Web App URL into <code>API_URL</code> in this page, or open this page with <code>?api=…</code> added to the address.</p></div></div>';
+}
+
+function renderGate(msg) {
+  $('totals').hidden = true;
+  $('app').innerHTML = '<form class="card gate" id="gate"><div class="card-head plain">Assessor sign-in</div><div class="card-body">' +
+    '<label class="f" for="pinIn">Event PIN</label>' +
+    '<input type="password" id="pinIn" autocomplete="current-password" required value="' + esc(pin) + '">' +
+    '<label class="f" for="nameIn">Your name</label>' +
+    '<input type="text" id="nameIn" autocomplete="name" required value="' + esc(form.assessor) + '">' +
+    (msg ? '<div class="err">' + esc(msg) + '</div>' : '') +
+    '<div style="margin-top:14px"><button class="btn" type="submit" style="width:100%">Open score sheet</button></div>' +
+    '<p class="hint">You only need to do this once on this device. The timetable is then stored, so the sheet keeps working if signal drops.</p>' +
+    '</div></form>';
+  $('gate').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var p = $('pinIn').value.trim(), n = $('nameIn').value.trim();
+    form.assessor = n; save(LS.assessor, n);       // keep the name if the PIN is wrong
+    var b = e.target.querySelector('button'); b.disabled = true; b.textContent = 'Checking…';
+    call({ action: 'config', pin: p }).then(function (res) {
+      if (!res.ok) return renderGate(res.message || 'PIN not recognised.');
+      pin = p; cfg = res.config; save(LS.pin, pin); save(LS.cfg, cfg);
+      form.assessor = n; save(LS.assessor, n); persist();
+      render(); flush();
+    }, function (err) {
+      renderGate('Couldn\'t reach the scoring sheet (' + (err.message || err) + '). Check signal and try again.');
+    });
+  });
+}
+
+function chip(value, label, sub, pressed, extra) {
+  return '<button type="button" class="chip" data-v="' + esc(value) + '" aria-pressed="' + (pressed ? 'true' : 'false') + '">' +
+    esc(label) + (sub ? '<small>' + esc(sub) + '</small>' : '') + (extra || '') + '</button>';
+}
+
+function renderScenario() {
+  var h = '<div class="card"><div class="card-head plain">Scenario</div><div class="card-body">';
+  h += '<label class="f" for="assessor">' + (SHEET === 'medical' ? 'Evaluator' : 'Assessor') + '</label>' +
+       '<input type="text" id="assessor" data-f="assessor" autocomplete="name" value="' + esc(form.assessor) + '">';
+  h += '<label class="f">Date</label><div class="chips" data-pick="date">' +
+       dates().map(function (d) { return chip(d, fmtDate(d), '', form.date === d); }).join('') + '</div>';
+  if (form.date) {
+    h += '<label class="f">Rotation</label><div class="chips" data-pick="rotation">' +
+         rotations(form.date).map(function (r) { return chip(r.rotation, 'Rotation ' + r.rotation, r.time, form.rotation === r.rotation); }).join('') + '</div>';
+  }
+  if (form.date && form.rotation) {
+    var locs = locationsFor(form.date, form.rotation);
+    h += '<label class="f" for="location">Location / scenario</label><select id="location" data-f="location"><option value="">Choose…</option>' +
+         locs.map(function (l) { return '<option' + (l === form.location ? ' selected' : '') + '>' + esc(l) + '</option>'; }).join('') + '</select>';
+    if (form.location && locs.indexOf(form.location) < 0) {
+      h += '<div class="warn">' + esc(form.location) + ' isn\'t running in this rotation' + (SHEET === 'medical' ? ' or has no medical scoring' : '') + '. Choose the location again.</div>';
+    }
+  }
+  if (form.date && form.rotation && form.location) {
+    var teams = teamsFor(form.date, form.rotation, form.location);
+    h += '<label class="f">Team</label><div class="chips" data-pick="team">' +
+         (teams.length ? teams.map(function (t) {
+           return chip(t, t, '', form.team === t, alreadySent(t) ? '<span class="done">✓ sent</span>' : '');
+         }).join('') : '<span class="hint">No teams timetabled here this rotation.</span>') + '</div>';
+    if (form.team && alreadySent(form.team)) {
+      h += '<div class="warn">You\'ve already sent a sheet for ' + esc(form.team) + ' here. Sending again replaces it in the standings; the earlier one is kept in the log.</div>';
+    }
+  }
+  h += '</div></div>';
+  return h;
+}
+
+function critRows(section) {
+  return (cfg.criteria[section] || []).map(function (c) {
+    var k = c[0], d = form.ded[section][k] || {};
+    var lost = (d.nsc || 0) * rules().nonSafetyCritical + (d.sc || 0) * rules().safetyCritical;
+    var noteOpen = !!d.noteOpen || !!d.note;
+    return '<div class="crit" data-sec="' + section + '" data-k="' + k + '">' +
+      '<div class="crit-top"><div><div class="crit-name">' + esc(c[1]) + '</div><div class="crit-look">' + esc(c[2]) + '</div></div>' +
+      '<div class="crit-ded' + (lost ? '' : ' zero') + '" data-lost>' + (lost ? '−' + lost : '0') + '</div></div>' +
+      '<div class="crit-ctl">' +
+        stepper('nsc', 'Non safety<br>critical −' + rules().nonSafetyCritical, d.nsc || 0, c[1]) +
+        stepper('sc', 'Safety<br>critical −' + rules().safetyCritical, d.sc || 0, c[1]) +
+        '<button type="button" class="note-btn' + (d.note ? ' has' : '') + '" data-note>' + (d.note ? 'Note ✓' : 'Add note') + '</button>' +
+      '</div>' +
+      '<textarea data-notefield placeholder="Notes" ' + (noteOpen ? '' : 'hidden') + '>' + esc(d.note || '') + '</textarea>' +
+    '</div>';
+  }).join('');
+}
+function stepper(kind, label, val, name) {
+  return '<span class="stepper ' + kind + (val ? ' has' : '') + '" data-kind="' + kind + '">' +
+    '<button type="button" data-step="-1" aria-label="Remove one ' + (kind === 'sc' ? 'safety critical' : 'non safety critical') + ' deduction, ' + esc(name) + '">−</button>' +
+    '<span class="lab">' + label + '</span><span class="val" aria-live="polite">' + val + '</span>' +
+    '<button type="button" data-step="1" aria-label="Add one ' + (kind === 'sc' ? 'safety critical' : 'non safety critical') + ' deduction, ' + esc(name) + '">+</button></span>';
+}
+
+function renderTC() {
+  var R = rules(), h = '';
+  h += '<div class="card"><div class="card-head plain">Team &amp; timings</div><div class="card-body">' +
+       '<label class="f" for="tl">Team leader</label><input type="text" id="tl" data-f="teamLeader" value="' + esc(form.teamLeader) + '">' +
+       '<div class="grid3">' +
+         '<div><label class="f" for="ta">Time allocation</label><input type="text" id="ta" data-f="timeAllocation" inputmode="numeric" placeholder="e.g. 60 min" value="' + esc(form.timeAllocation) + '"></div>' +
+         '<div><label class="f" for="ct">Completion time</label><input type="text" id="ct" data-f="completionTime" inputmode="numeric" placeholder="e.g. 52:30" value="' + esc(form.completionTime) + '"></div>' +
+         '<div><label class="f" for="cc">Meaningful casualty contact (mm:ss)</label><input type="text" id="cc" data-f="contactTime" inputmode="numeric" placeholder="e.g. 08:15" value="' + esc(form.contactTime) + '"></div>' +
+       '</div></div></div>';
+  h += '<div class="card"><div class="card-head technical">Technical <span class="sub" id="techHead"></span></div>' + critRows('technical') + '</div>';
+  h += '<div class="card"><div class="card-head command">Command <span class="sub" id="cmdHead"></span></div>' + critRows('command') + '</div>';
+  h += '<div class="card"><div class="card-head plain">Scenario completion</div><div class="card-body">' +
+       '<p class="hint" style="margin:0 0 10px">Teams must complete the scenario within the allocated time.</p>' +
+       '<div class="yesno"><button type="button" class="yes" data-completed="Yes" aria-pressed="' + (form.completed === 'Yes') + '">Yes – completed<small>+' + R.completionBonus + ' points</small></button>' +
+       '<button type="button" class="no" data-completed="No" aria-pressed="' + (form.completed === 'No') + '">No – not completed<small>0 points</small></button></div></div></div>';
+  h += feedbackCard();
+  return h;
+}
+
+function renderMedical() {
+  var R = rules(), h = '';
+  h += '<div class="card"><div class="card-head medical">Scenario performance <span class="sub" id="medHead"></span></div>' +
+       '<div class="card-body" style="padding-bottom:4px"><p class="hint" style="margin:0">Deductions apply if not achieved. Select the highest deduction once only per topic.</p></div>';
+  h += (cfg.criteria.medical || []).map(function (c) {
+    var k = c[0], d = form.ded.medical[k] || {}, lvl = d.level || 'none';
+    var noteOpen = !!d.noteOpen || !!d.note;
+    return '<div class="crit" data-sec="medical" data-k="' + k + '">' +
+      '<div class="crit-top"><div><div class="crit-name">' + esc(c[1]) + '</div>' + (c[2] ? '<div class="crit-look">' + esc(c[2]) + '</div>' : '') + '</div>' +
+      '<div class="crit-ded' + (lvl === 'none' ? ' zero' : '') + '" data-lost>' + (lvl === 'critical' ? '−' + R.medicalCritical : lvl === 'minor' ? '−' + R.medicalMinor : '0') + '</div></div>' +
+      '<div class="crit-ctl"><span class="seg" role="group" aria-label="Deduction for ' + esc(c[1]) + '">' +
+        '<button type="button" class="none" data-level="none" aria-pressed="' + (lvl === 'none') + '">None</button>' +
+        '<button type="button" class="minor" data-level="minor" aria-pressed="' + (lvl === 'minor') + '">Minor −' + R.medicalMinor + '</button>' +
+        '<button type="button" class="critical" data-level="critical" aria-pressed="' + (lvl === 'critical') + '">Critical −' + R.medicalCritical + '</button>' +
+      '</span><button type="button" class="note-btn' + (d.note ? ' has' : '') + '" data-note>' + (d.note ? 'Note ✓' : 'Add note') + '</button></div>' +
+      '<textarea data-notefield placeholder="Notes" ' + (noteOpen ? '' : 'hidden') + '>' + esc(d.note || '') + '</textarea>' +
+    '</div>';
+  }).join('') + '</div>';
+  h += feedbackCard(true);
+  return h;
+}
+
+function feedbackCard(medical) {
+  var sc = medical ? rules().medicalCritical : rules().safetyCritical;
+  return '<div class="card"><div class="card-head plain">Feedback</div><div class="card-body">' +
+    (medical ? '<label class="f" for="cm">Comments / feedback</label><textarea id="cm" data-f="comments">' + esc(form.comments) + '</textarea>' : '') +
+    '<label class="f" for="scd">Safety critical deductions (−' + sc + ')</label>' +
+    '<textarea id="scd" data-f="safetyCritical" placeholder="Detail any safety critical errors and why a deduction was applied.">' + esc(form.safetyCritical) + '</textarea>' +
+    '<label class="f" for="gp">Good practice observed</label>' +
+    '<textarea id="gp" data-f="goodPractice" placeholder="Positive actions and effective ' + (medical ? 'care' : 'teamwork') + '.">' + esc(form.goodPractice) + '</textarea>' +
+    '<label class="f" for="kl">Key learning / feedback themes</label>' +
+    '<textarea id="kl" data-f="keyLearning" placeholder="Primary areas of development for the team.">' + esc(form.keyLearning) + '</textarea>' +
+    '</div></div>';
+}
+
+function renderTotals() {
+  var el = $('totals');
+  if (!cfg || !form.team) { el.hidden = true; return; }
+  el.hidden = false;
+  var R = rules(), items;
+  if (SHEET === 'tc') {
+    var t = sectionScore('technical'), c = sectionScore('command'), b = form.completed === 'Yes' ? R.completionBonus : 0;
+    var all = t + c + b;
+    items = tot('Technical', t, R.technicalMax) + tot('Command', c, R.commandMax) +
+      '<div class="tot opt"><div class="k">Done</div><div class="v">' + (form.completed ? (form.completed === 'Yes' ? '+' + b : '0') : '–') + '</div></div>' +
+      tot('Total', all, R.technicalMax + R.commandMax + R.completionBonus, true);
+    if ($('techHead')) $('techHead').textContent = t + ' / ' + R.technicalMax;
+    if ($('cmdHead')) $('cmdHead').textContent = c + ' / ' + R.commandMax;
+  } else {
+    var m = sectionScore('medical');
+    items = tot('Medical', m, R.medicalMax, true);
+    if ($('medHead')) $('medHead').textContent = m + ' / ' + R.medicalMax;
+  }
+  el.innerHTML = '<div class="totals-inner"><div class="tot-items">' + items + '</div><button class="send" data-act="review">Review<br>&amp; send</button></div>';
+}
+function tot(k, v, max, big) {
+  return '<div class="tot' + (v < 0 ? ' neg' : '') + (big ? ' big' : '') + '"><div class="k">' + k + '</div><div class="v">' + v + '<small>/' + max + '</small></div></div>';
+}
+
+function renderLog() {
+  var el = $('log'); if (!el) return;
+  var log = sentLog().filter(function (x) { return x.sheet === SHEET; }).slice().reverse();
+  var box = outbox();
+  if ($('logCount')) $('logCount').textContent = log.length ? log.length : '';
+  if (!log.length) { el.innerHTML = '<div class="empty">Nothing sent yet.</div>'; return; }
+  el.innerHTML = log.slice(0, 40).map(function (x) {
+    var q = box.filter(function (b) { return b.submission.id === x.id; })[0];
+    var st = x.state === 'sent' ? '<span class="st ok">✓ Received</span>'
+      : x.state === 'rejected' ? '<span class="st bad">✗ Not accepted</span>'
+      : '<span class="st wait">● Waiting to send</span>';
+    return '<div class="log-row"><div><strong>' + esc(x.team) + '</strong> · ' + esc(x.location) +
+      '<div class="hint" style="margin:2px 0 0">' + esc(fmtDate(x.date)) + ', rotation ' + esc(x.rotation) + ' · ' + esc(x.summary) +
+      (x.state === 'rejected' ? '<br><span style="color:var(--red)">' + esc(x.error) + '</span>' : '') +
+      (q && q.state !== 'rejected' && q.error ? '<br>Last try: ' + esc(q.error) : '') + '</div></div>' + st + '</div>';
+  }).join('');
+}
+
+/* ======================================================================
+   EVENTS (delegated)
+   ====================================================================== */
+$('app').addEventListener('input', function (e) {
+  var f = e.target.getAttribute('data-f');
+  if (f) {
+    form[f] = e.target.value;
+    if (f === 'assessor') save(LS.assessor, form.assessor);
+    persist(); return;
+  }
+  if (e.target.hasAttribute('data-notefield')) {
+    var row = e.target.closest('.crit'), sec = row.dataset.sec, k = row.dataset.k;
+    var d = form.ded[sec][k] = form.ded[sec][k] || {};
+    d.note = e.target.value; persist();
+  }
+});
+$('app').addEventListener('change', function (e) {
+  if (e.target.id === 'location') {
+    form.location = e.target.value; form.team = ''; save(LS.loc, form.location); persist(); render();
+  }
+});
+$('app').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  var pick = b.closest('[data-pick]');
+  if (pick) {
+    var field = pick.getAttribute('data-pick'), v = b.getAttribute('data-v');
+    if (field === 'team' && form.team && form.team !== v && isDirty()) {
+      if (!confirm('Switch team? The scores entered for ' + form.team + ' will be cleared.')) return;
+      resetScores();
+    }
+    form[field] = v;
+    if (field === 'date') { form.rotation = guessRotation(v); form.team = ''; }
+    if (field === 'rotation') { form.team = ''; }
+    persist(); render();
+    return;
+  }
+  var row = b.closest('.crit');
+  if (row && b.hasAttribute('data-step')) {
+    var sec = row.dataset.sec, k = row.dataset.k, kind = b.closest('.stepper').dataset.kind;
+    var d = form.ded[sec][k] = form.ded[sec][k] || {};
+    d[kind] = Math.max(0, Math.min(rules().maxCountPerBox, (d[kind] || 0) + Number(b.dataset.step)));
+    var st = b.closest('.stepper');
+    st.querySelector('.val').textContent = d[kind];
+    st.classList.toggle('has', !!d[kind]);
+    var lost = (d.nsc || 0) * rules().nonSafetyCritical + (d.sc || 0) * rules().safetyCritical;
+    var L = row.querySelector('[data-lost]'); L.textContent = lost ? '−' + lost : '0'; L.classList.toggle('zero', !lost);
+    persist(); renderTotals(); return;
+  }
+  if (row && b.hasAttribute('data-level')) {
+    var d2 = form.ded.medical[row.dataset.k] = form.ded.medical[row.dataset.k] || {};
+    d2.level = b.dataset.level;
+    row.querySelectorAll('[data-level]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    var R = rules(), L2 = row.querySelector('[data-lost]');
+    L2.textContent = d2.level === 'critical' ? '−' + R.medicalCritical : d2.level === 'minor' ? '−' + R.medicalMinor : '0';
+    L2.classList.toggle('zero', d2.level === 'none');
+    persist(); renderTotals(); return;
+  }
+  if (row && b.hasAttribute('data-note')) {
+    var ta = row.querySelector('[data-notefield]'); ta.hidden = !ta.hidden; if (!ta.hidden) ta.focus();
+    var d3 = form.ded[row.dataset.sec][row.dataset.k] = form.ded[row.dataset.sec][row.dataset.k] || {};
+    d3.noteOpen = !ta.hidden; persist(); return;
+  }
+  if (b.hasAttribute('data-completed')) {
+    form.completed = b.dataset.completed;
+    document.querySelectorAll('[data-completed]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    persist(); renderTotals(); return;
+  }
+  var act = b.getAttribute('data-act');
+  if (act === 'refresh') {
+    call({ action: 'config', pin: pin }).then(function (res) {
+      if (res.ok) { cfg = res.config; save(LS.cfg, cfg); render(); toast('Timetable updated'); }
+      else toast(res.message || 'Could not refresh');
+    }, function () { toast('No signal — using the stored timetable'); });
+  }
+  if (act === 'signout') {
+    if (outbox().length && !confirm('Some scores are still waiting to send from this device. They will send once you sign back in. Continue?')) return;
+    pin = ''; drop(LS.pin); render();
+  }
+});
+$('totals').addEventListener('click', function (e) { if (e.target.closest('[data-act=review]')) openReview(); });
+
+function isDirty() {
+  return ['technical', 'command', 'medical'].some(function (s) {
+    return Object.keys(form.ded[s]).some(function (k) { var d = form.ded[s][k]; return d.nsc || d.sc || (d.level && d.level !== 'none') || d.note; });
+  }) || form.completed || form.teamLeader || form.safetyCritical || form.goodPractice || form.keyLearning || form.comments;
+}
+function resetScores() {
+  form = blankForm({ assessor: form.assessor, date: form.date, rotation: form.rotation, location: form.location });
+}
+
+/* ======================================================================
+   REVIEW & SEND
+   ====================================================================== */
+function openReview() {
+  var R = rules(), problems = [], warnings = [];
+  if (!form.assessor.trim()) problems.push((SHEET === 'medical' ? 'Evaluator' : 'Assessor') + ' name is missing.');
+  if (!form.team) problems.push('Choose a team.');
+  if (SHEET === 'tc' && !form.completed) problems.push('Mark the scenario as completed or not completed.');
+  if (SHEET === 'tc' && !form.teamLeader.trim()) warnings.push('Team leader name is blank.');
+  if (scCount() && !form.safetyCritical.trim()) warnings.push('There\'s a safety critical deduction but no detail of why. Add it under Feedback if you can.');
+
+  var rowsHtml = '', dedHtml = '', total, negative = false;
+  function dedLines(section) {
+    return (cfg.criteria[section] || []).map(function (c) {
+      var d = form.ded[section][c[0]]; if (!d) return '';
+      var parts = [];
+      if (section === 'medical') { if (d.level === 'minor') parts.push('minor −' + R.medicalMinor); if (d.level === 'critical') parts.push('critical −' + R.medicalCritical); }
+      else { if (d.nsc) parts.push(d.nsc + ' × −' + R.nonSafetyCritical); if (d.sc) parts.push(d.sc + ' × −' + R.safetyCritical + ' safety critical'); }
+      return parts.length ? '<li>' + esc(c[1]) + ': ' + parts.join(', ') + '</li>' : '';
+    }).join('');
+  }
+  if (SHEET === 'tc') {
+    var t = sectionScore('technical'), c = sectionScore('command'), b = form.completed === 'Yes' ? R.completionBonus : 0;
+    total = t + c + b; negative = t < 0 || c < 0;
+    rowsHtml = '<tr><td>Technical</td><td class="n">' + t + ' / ' + R.technicalMax + '</td></tr>' +
+               '<tr><td>Command</td><td class="n">' + c + ' / ' + R.commandMax + '</td></tr>' +
+               '<tr><td>Scenario completed</td><td class="n">' + (form.completed || '–') + (b ? ' (+' + b + ')' : '') + '</td></tr>' +
+               '<tr class="total"><td>Total</td><td class="n">' + total + ' / ' + (R.technicalMax + R.commandMax + R.completionBonus) + '</td></tr>';
+    dedHtml = dedLines('technical') + dedLines('command');
+  } else {
+    total = sectionScore('medical'); negative = total < 0;
+    rowsHtml = '<tr class="total"><td>Medical</td><td class="n">' + total + ' / ' + R.medicalMax + '</td></tr>';
+    dedHtml = dedLines('medical');
+  }
+
+  var h = '<h2 id="modalTitle">Check before sending</h2>' +
+    '<div class="who"><strong>' + esc(form.team || '—') + '</strong> · ' + esc(form.location) + '<br>' + esc(fmtDate(form.date)) + ', rotation ' + esc(form.rotation) +
+    (SHEET === 'tc' && form.teamLeader ? ' · Team leader ' + esc(form.teamLeader) : '') + '</div>' +
+    '<table class="sumtable">' + rowsHtml + '</table>' +
+    (dedHtml ? '<ul class="dedlist">' + dedHtml + '</ul>' : '<p class="dedlist">No deductions.</p>') +
+    problems.map(function (p) { return '<div class="err">' + esc(p) + '</div>'; }).join('') +
+    warnings.map(function (p) { return '<div class="warn">' + esc(p) + '</div>'; }).join('') +
+    (negative ? '<label class="confirm"><input type="checkbox" id="negOk"> A total is below zero. I confirm this is correct.</label>' : '') +
+    '<div class="modal-actions"><button class="btn ghost" data-m="close">Back to sheet</button>' +
+    (problems.length ? '' : '<button class="btn" data-m="send">Send scores</button>') + '</div>';
+  $('modal').innerHTML = h;
+  $('modalBg').classList.add('open');
+  var sendBtn = $('modal').querySelector('[data-m=send]');
+  if (sendBtn) sendBtn.focus();
+}
+$('modalBg').addEventListener('click', function (e) {
+  if (e.target === $('modalBg') || e.target.closest('[data-m=close]')) { $('modalBg').classList.remove('open'); return; }
+  if (e.target.closest('[data-m=send]')) {
+    var neg = $('negOk');
+    if (neg && !neg.checked) { toast('Tick the box to confirm the score below zero'); return; }
+    submit(!!neg);
+  }
+});
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') $('modalBg').classList.remove('open'); });
+
+function cleanDeductions() {
+  var out = {};
+  (SHEET === 'tc' ? ['technical', 'command'] : ['medical']).forEach(function (s) {
+    out[s] = {};
+    Object.keys(form.ded[s]).forEach(function (k) {
+      var d = form.ded[s][k], o = {};
+      if (s === 'medical') { if (d.level && d.level !== 'none') o.level = d.level; }
+      else { if (d.nsc) o.nsc = d.nsc; if (d.sc) o.sc = d.sc; }
+      if (d.note && d.note.trim()) o.note = d.note.trim();
+      if (Object.keys(o).length) out[s][k] = o;
+    });
+  });
+  return out;
+}
+
+function submit(confirmNegative) {
+  var R = rules();
+  var sub = {
+    id: uid(), sheet: SHEET, app: 'ukro-scoresheet/1',
+    date: form.date, rotation: form.rotation, location: form.location, team: form.team,
+    assessor: form.assessor.trim(), deviceTime: new Date().toISOString(),
+    deductions: cleanDeductions(), confirmNegative: confirmNegative,
+    safetyCritical: form.safetyCritical, goodPractice: form.goodPractice, keyLearning: form.keyLearning
+  };
+  var summary;
+  if (SHEET === 'tc') {
+    sub.teamLeader = form.teamLeader; sub.timeAllocation = form.timeAllocation; sub.completionTime = form.completionTime;
+    sub.contactTime = form.contactTime; sub.completed = form.completed;
+    var t = sectionScore('technical'), c = sectionScore('command');
+    summary = 'T ' + t + ' · C ' + c + ' · ' + (form.completed === 'Yes' ? 'Completed' : 'Not completed') + ' · ' + (t + c + (form.completed === 'Yes' ? R.completionBonus : 0));
+  } else {
+    sub.comments = form.comments;
+    summary = 'Medical ' + sectionScore('medical');
+  }
+  // 1) Save on the device first, so nothing is lost if signal drops.
+  var box = outbox(); box.push({ submission: sub, state: 'queued', tries: 0 }); save(LS.outbox, box);
+  var log = sentLog(); log.push({ id: sub.id, key: slotKey(sub), sheet: SHEET, team: sub.team, location: sub.location, date: sub.date, rotation: sub.rotation, summary: summary, state: 'queued' });
+  save(LS.sent, log.slice(-200));
+  // 2) Clear the sheet for the next team (keeps assessor, date, rotation, location).
+  resetScores(); persist();
+  $('modalBg').classList.remove('open');
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast(navigator.onLine ? 'Sending…' : 'No signal: saved on this device and will send automatically');
+  // 3) Send.
+  flush();
+}
+
+/* ---------- start ---------- */
+render();
+if (pin && cfg) {
+  flush();
+  // Quietly refresh the timetable in case the organiser changed it.
+  call({ action: 'config', pin: pin }).then(function (res) {
+    if (res.ok) { cfg = res.config; save(LS.cfg, cfg); if (!isDirty()) render(); }
+    else if (res.error === 'bad_pin') { pin = ''; drop(LS.pin); render(); }
+  }, function () {});
+}
+})();
+</script>
+</body>
+</html>
