@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UKRO Rope Rescue Challenge &mdash; Fire Service Projects</title>
+<meta name="description" content="Digital assessor scoresheets and live standings for the UKRO National Rope Rescue Challenge.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="board.css">
+</head>
+<body>
+
+<div class="board">
+  <div class="board-inner">
+
+    <a class="back-link" href="index.html">Back to the main board</a>
+
+    <div class="motto">Smart Work Will Reduce Duplication</div>
+
+    <div class="board-head">
+      <div class="clock-wrap">
+        <!-- Live analogue clock -->
+        <svg class="clock" viewBox="0 0 100 100" role="img" aria-label="Current time">
+          <circle cx="50" cy="50" r="48" fill="#FFFFFF" stroke="#26282B" stroke-width="3"/>
+          <g stroke="#26282B" stroke-width="2">
+            <line x1="50" y1="6" x2="50" y2="13"/>
+            <line x1="50" y1="87" x2="50" y2="94"/>
+            <line x1="6" y1="50" x2="13" y2="50"/>
+            <line x1="87" y1="50" x2="94" y2="50"/>
+          </g>
+          <g stroke="#26282B" stroke-width="1">
+            <line x1="72" y1="11.9" x2="68.5" y2="17.9"/>
+            <line x1="88.1" y1="28" x2="82.1" y2="31.5"/>
+            <line x1="88.1" y1="72" x2="82.1" y2="68.5"/>
+            <line x1="72" y1="88.1" x2="68.5" y2="82.1"/>
+            <line x1="28" y1="88.1" x2="31.5" y2="82.1"/>
+            <line x1="11.9" y1="72" x2="17.9" y2="68.5"/>
+            <line x1="11.9" y1="28" x2="17.9" y2="31.5"/>
+            <line x1="28" y1="11.9" x2="31.5" y2="17.9"/>
+          </g>
+          <line id="hourHand"   x1="50" y1="50" x2="50" y2="28" stroke="#26282B" stroke-width="4" stroke-linecap="round"/>
+          <line id="minuteHand" x1="50" y1="50" x2="50" y2="16" stroke="#26282B" stroke-width="2.5" stroke-linecap="round"/>
+          <line id="secondHand" x1="50" y1="54" x2="50" y2="14" stroke="#D42B1E" stroke-width="1.2" stroke-linecap="round"/>
+          <circle cx="50" cy="50" r="2.5" fill="#26282B"/>
+        </svg>
+        <div class="board-title">
+          <h1>UKRO Rope<br>Rescue Challenge</h1>
+          <div class="stage">Scoring &amp; Standings &middot; Control Board</div>
+        </div>
+      </div>
+
+      <div class="info-table">
+        <div class="it-head">Working Notes</div>
+        <ul>
+          <li>Assessor scoresheets</li>
+          <li>Automatic totals</li>
+          <li>Runs in the browser</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="board-body">
+      <div class="tallies">
+        <div class="col-label">Tallies &mdash; Competition Tools</div>
+
+        <!-- ============ TOOLS IN DEVELOPMENT ============
+             As each tool is built, replace its slot with an <a class="tally"> block
+             (copy one from index.html), changing href, .type, <h2>, .desc and .open-cue.
+        ============================================== -->
+
+        <div class="tally-slot">Assessor scoresheet: Technical &amp; Command &mdash; in development</div>
+        <div class="tally-slot">Assessor scoresheet: Medical &mdash; in development</div>
+        <div class="tally-slot">Live standings &amp; awards &mdash; in development</div>
+      </div>
+
+      <div class="remarks">
+        <div class="col-label">Remarks</div>
+        <div class="remarks-lines">
+          <p class="remarks-note">Digital scoresheets for assessors, feeding the overall standings automatically. No more re-keying paper sheets at the end of the day.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="board-foot">
+      <!-- EDIT: put your name / contact details here -->
+      <span>Built by a serving UK firefighter.</span>
+      <span><a class="back-link" href="index.html" style="margin:0">Back to the main board</a></span>
+    </div>
+
+  </div>
+</div>
+
+<script src="clock.js"></script>
+
+</body>
+</html>
