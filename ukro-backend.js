@@ -4,9 +4,13 @@
    Lives inside the event's Google Sheet. The assessor scoresheet and the
    organiser standings page (both on GitHub Pages) talk to it.
 
+   This same file also runs in the browser for PRACTICE MODE (see
+   ukro-demo.js), so the scoring rules only live in one place.
+
    ONE-OFF SETUP (about 10 minutes):
      1. Create a blank Google Sheet. Extensions > Apps Script.
      2. Delete the sample code, paste in this whole file, click Save.
+        (Apps Script will call the file Code.gs — that's fine.)
      3. Choose the function "setup" in the toolbar and click Run.
         Approve the permission prompt (it only touches this one sheet).
         This creates the tabs, pre-filled with the 2026 teams and timetable.

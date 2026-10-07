@@ -200,6 +200,9 @@ input:focus, select:focus, textarea:focus { outline: 3px solid rgba(43,57,144,.2
 .gate { max-width: 420px; margin: 30px auto; }
 .toast { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 9px; z-index: 30; font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: 92vw; display: none; }
 .toast.show { display: block; }
+.demo-bar { background: #F0C000; color: #1A1C1F; font-weight: 600; font-size: .88rem; padding: 7px 16px; text-align: center; line-height: 1.3; }
+.demo-bar strong { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+.demo-bar button { background: #1A1C1F; color: #fff; border: none; border-radius: 6px; padding: 4px 10px; font-weight: 700; cursor: pointer; margin: 3px 2px 0; font-size: .82rem; }
 [hidden] { display: none !important; }
 </style>
 </head>
@@ -215,6 +218,8 @@ input:focus, select:focus, textarea:focus { outline: 3px solid rgba(43,57,144,.2
     <div class="event" id="eventName">UKRO Rope Rescue Challenge</div>
   </div>
 </div>
+
+<div class="demo-bar" id="demoBar" hidden><strong>Practice mode</strong> · Scores are saved on this device only and don't reach the event standings.</div>
 
 <main id="app"></main>
 
@@ -235,9 +240,15 @@ var API_URL = '';
 
 var params = new URLSearchParams(location.search);
 var SHEET = params.get('sheet') === 'medical' ? 'medical' : 'tc';
+function readLS(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
+if (params.get('api')) { try { localStorage.setItem('ukro-api', JSON.stringify(params.get('api'))); } catch (e) {} }
+var api = params.get('api') || readLS('ukro-api') || API_URL;
+// Practice mode: until the page is linked to the Google Sheet, or when opened with ?demo=1
+var DEMO = params.get('demo') === '1' || !api;
+var P = DEMO ? 'ukro-demo-' : 'ukro-';
 var LS = {
-  api: 'ukro-api', pin: 'ukro-pin', cfg: 'ukro-config', assessor: 'ukro-assessor',
-  draft: 'ukro-draft-' + SHEET, outbox: 'ukro-outbox', sent: 'ukro-sent', loc: 'ukro-loc-' + SHEET
+  api: 'ukro-api', pin: P + 'pin', cfg: P + 'config', assessor: 'ukro-assessor',
+  draft: P + 'draft-' + SHEET, outbox: P + 'outbox', sent: P + 'sent', loc: 'ukro-loc-' + SHEET
 };
 
 /* ---------- small helpers ---------- */
@@ -264,12 +275,10 @@ function toast(msg, ms) {
   clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('show'); }, ms || 3500);
 }
 
-var api = params.get('api') || load(LS.api, '') || API_URL;
-if (params.get('api')) save(LS.api, params.get('api'));
 
 /* ---------- state ---------- */
 var cfg = load(LS.cfg, null);
-var pin = load(LS.pin, '');
+var pin = load(LS.pin, '') || (DEMO ? 'demo' : '');
 var form = load(LS.draft, null) || blankForm();
 
 function blankForm(keep) {
@@ -290,6 +299,7 @@ document.title = (SHEET === 'medical' ? 'Medical' : 'Technical & Command') + ' S
 
 /* ---------- network ---------- */
 function call(body) {
+  if (DEMO) return window.UKRODemo.call(body);
   if (!api) return Promise.reject(new Error('The scoring sheet address has not been set up yet.'));
   var ctrl = window.AbortController ? new AbortController() : null;
   var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 20000);
@@ -410,6 +420,7 @@ window.addEventListener('offline', renderNet);
 
 function renderNet() {
   var el = $('net'), q = outbox().filter(function (x) { return x.state !== 'rejected'; }).length;
+  if (DEMO && !q) { el.className = 'net'; el.textContent = 'Practice'; return; }
   if (q) { el.className = 'net queued'; el.textContent = flushing ? 'Sending…' : q + ' waiting to send'; }
   else if (!navigator.onLine) { el.className = 'net off'; el.textContent = 'No signal'; }
   else { el.className = 'net'; el.textContent = 'Online'; }
@@ -420,7 +431,7 @@ function renderNet() {
    ====================================================================== */
 function render() {
   renderNet();
-  if (!api) return renderNoApi();
+  if (!api && !DEMO) return renderNoApi();
   if (!cfg || !pin) return renderGate();
   $('eventName').textContent = cfg.event;
   if (!form.date) {
@@ -436,7 +447,7 @@ function render() {
     h += '<div class="card"><div class="empty">Choose the date, rotation, location and team above to open the score sheet.</div></div>';
   }
   h += '<div class="card"><div class="card-head plain">Sent from this device <span class="sub" id="logCount"></span></div><div id="log"></div></div>';
-  h += '<p class="hint" style="text-align:center;margin:6px 0 20px"><button class="link" data-act="refresh">Refresh timetable</button> · <button class="link" data-act="signout">Change PIN</button></p>';
+  h += '<p class="hint" style="text-align:center;margin:6px 0 20px"><button class="link" data-act="refresh">Refresh timetable</button> · <button class="link" data-act="signout">' + (DEMO ? 'Change name' : 'Change PIN') + '</button>' + (DEMO ? ' · <a class="link" href="ukro-standings.html' + (params.get('demo') ? '?demo=1' : '') + '">See practice standings</a>' : '') + '</p>';
   $('app').innerHTML = h;
   renderLog();
   renderTotals();
@@ -452,8 +463,8 @@ function renderNoApi() {
 function renderGate(msg) {
   $('totals').hidden = true;
   $('app').innerHTML = '<form class="card gate" id="gate"><div class="card-head plain">Assessor sign-in</div><div class="card-body">' +
-    '<label class="f" for="pinIn">Event PIN</label>' +
-    '<input type="password" id="pinIn" autocomplete="current-password" required value="' + esc(pin) + '">' +
+    (DEMO ? '<input type="hidden" id="pinIn" value="demo"><p class="hint" style="margin:0 0 6px">Practice mode: no PIN needed. Try anything — it only stays on this device.</p>'
+          : '<label class="f" for="pinIn">Event PIN</label><input type="password" id="pinIn" autocomplete="current-password" required value="' + esc(pin) + '">') +
     '<label class="f" for="nameIn">Your name</label>' +
     '<input type="text" id="nameIn" autocomplete="name" required value="' + esc(form.assessor) + '">' +
     (msg ? '<div class="err">' + esc(msg) + '</div>' : '') +
@@ -709,7 +720,7 @@ $('app').addEventListener('click', function (e) {
   }
   if (act === 'signout') {
     if (outbox().length && !confirm('Some scores are still waiting to send from this device. They will send once you sign back in. Continue?')) return;
-    pin = ''; drop(LS.pin); render();
+    pin = ''; drop(LS.pin); drop(LS.cfg); cfg = null; render();
   }
 });
 $('totals').addEventListener('click', function (e) { if (e.target.closest('[data-act=review]')) openReview(); });
@@ -831,7 +842,17 @@ function submit(confirmNegative) {
   flush();
 }
 
-/* ---------- start ---------- */
+/* ---------- start (practice mode loads the scoring code first) ---------- */
+function loadScript(src) {
+  return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+}
+if (DEMO) {
+  $('demoBar').hidden = false;
+  loadScript('ukro-backend.js').then(function () { return loadScript('ukro-demo.js'); }).then(start, function () {
+    $('app').innerHTML = '<div class="empty">Practice mode needs one-off signal to load. Check the connection and refresh.</div>';
+  });
+} else start();
+function start() {
 render();
 if (pin && cfg) {
   flush();
@@ -840,6 +861,7 @@ if (pin && cfg) {
     if (res.ok) { cfg = res.config; save(LS.cfg, cfg); if (!isDirty()) render(); }
     else if (res.error === 'bad_pin') { pin = ''; drop(LS.pin); render(); }
   }, function () {});
+}
 }
 })();
 </script>
